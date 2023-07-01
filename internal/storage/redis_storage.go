@@ -4,28 +4,27 @@ import (
 	"context"
 
 	"github.com/redis/go-redis/v9"
-	"github.com/selmant/anagram-finder-trendyol/internal"
 	log "github.com/sirupsen/logrus"
 )
 
-type RedisAnagramStorage struct {
+type RedisStorage struct {
 	redisClient *redis.Client
 }
 
-func NewRedisAnagramStorage(redisOptions redis.Options) *RedisAnagramStorage {
-	return &RedisAnagramStorage{redisClient: redis.NewClient(&redisOptions)}
+func NewRedisStorage(redisOptions redis.Options) *RedisStorage {
+	return &RedisStorage{redisClient: redis.NewClient(&redisOptions)}
 }
 
-func (s *RedisAnagramStorage) Store(ctx context.Context, word string, letterMap internal.AnagramLetterMap) error {
-	return s.redisClient.SAdd(ctx, letterMap.AnagramHash(), word).Err()
+func (s *RedisStorage) Store(ctx context.Context, hashKey string, word string) error {
+	return s.redisClient.SAdd(ctx, hashKey, word).Err()
 }
 
-func (s *RedisAnagramStorage) AllAnagrams(ctx context.Context) (<-chan []string, <-chan error) {
+func (s *RedisStorage) AllAnagrams(ctx context.Context) (<-chan []string, <-chan error) {
 	results := make(chan []string, 1)
 	errors := make(chan error, 1)
 	go func() {
 		defer func() {
-			log.Info("Closing anagram results and errors channels")
+			log.Info("Closing results and errors channels")
 			close(results)
 			close(errors)
 		}()

@@ -10,10 +10,10 @@ import (
 
 type AnagramApplication struct {
 	AnagramInput   input.DataReader
-	AnagramStorage storage.AnagramStorage
+	AnagramStorage storage.Storage
 }
 
-func NewAnagramApplication(input input.DataReader, storage storage.AnagramStorage) *AnagramApplication {
+func NewAnagramApplication(input input.DataReader, storage storage.Storage) *AnagramApplication {
 	return &AnagramApplication{
 		AnagramInput:   input,
 		AnagramStorage: storage,
