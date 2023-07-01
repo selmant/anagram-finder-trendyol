@@ -11,12 +11,16 @@ type RedisStorage struct {
 	redisClient *redis.Client
 }
 
-func NewRedisStorage(redisOptions redis.Options) *RedisStorage {
-	return &RedisStorage{redisClient: redis.NewClient(&redisOptions)}
+func NewRedisStorage(redisClient redis.Client) *RedisStorage {
+	return &RedisStorage{redisClient: &redisClient}
 }
 
 func (s *RedisStorage) Store(ctx context.Context, hashKey string, word string) error {
 	return s.redisClient.SAdd(ctx, hashKey, word).Err()
+}
+
+func (s *RedisStorage) Get(ctx context.Context, hashKey string) ([]string, error) {
+	return s.redisClient.SMembers(ctx, hashKey).Result()
 }
 
 func (s *RedisStorage) AllAnagrams(ctx context.Context) (<-chan []string, <-chan error) {
@@ -50,5 +54,5 @@ func (s *RedisStorage) AllAnagrams(ctx context.Context) (<-chan []string, <-chan
 			results <- anagrams
 		}
 	}()
-	return results, nil
+	return results, errors
 }
