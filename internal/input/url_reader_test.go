@@ -53,7 +53,7 @@ func TestUrlReaderReadMultipleLines(t *testing.T) {
 	assert.NoError(err)
 
 	count := 0
-	for word := range ur.Words(ctx) {
+	for word := range ur.Lines(ctx) {
 		count++
 		assert.Equal("test", word)
 	}
@@ -80,7 +80,7 @@ func TestUrlReaderConcurrentRead(t *testing.T) {
 	count1 := 0
 	count2 := 0
 	go func() {
-		for word := range fr.Words(ctx) {
+		for word := range fr.Lines(ctx) {
 			time.Sleep(1 * time.Millisecond)
 			count1++
 			assert.Equal("test", word)
@@ -90,7 +90,7 @@ func TestUrlReaderConcurrentRead(t *testing.T) {
 	}()
 
 	go func() {
-		for word := range fr.Words(ctx) {
+		for word := range fr.Lines(ctx) {
 			time.Sleep(1 * time.Millisecond)
 			count2++
 			assert.Equal("test", word)

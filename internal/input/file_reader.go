@@ -8,16 +8,16 @@ import (
 
 type FileReader struct {
 	path         string
-	wordsChannel chan string
+	linesChannel chan string
 	options      ReaderOptions
 }
 
 func NewFileReader(path string, options ReaderOptions) FileReader {
-	wordsChannel := make(chan string, options.WordsChannelSize)
+	linesChannel := make(chan string, options.WordsChannelSize)
 
 	return FileReader{
 		path:         path,
-		wordsChannel: wordsChannel,
+		linesChannel: linesChannel,
 		options:      options,
 	}
 }
@@ -32,20 +32,20 @@ func (f *FileReader) Prepare(_ context.Context) error {
 	go func() {
 		for scanner.Scan() {
 			line := scanner.Text()
-			f.wordsChannel <- line
+			f.linesChannel <- line
 		}
 		file.Close()
-		close(f.wordsChannel)
+		close(f.linesChannel)
 	}()
 
 	return nil
 }
 
-func (f *FileReader) Words(_ context.Context) <-chan string {
+func (f *FileReader) Lines(_ context.Context) <-chan string {
 	out := make(chan string, 1)
 	go func() {
-		for word := range f.wordsChannel {
-			out <- word
+		for line := range f.linesChannel {
+			out <- line
 		}
 		close(out)
 	}()

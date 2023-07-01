@@ -1,11 +1,13 @@
 package input
 
-type ContentInput interface {
+import "context"
+
+type DataReader interface {
 	// It returns a channel with the words to be processed. the channel is closed when all words are read.
 	// this function can be called concurrently.
-	Words() <-chan string
+	Lines(ctx context.Context) <-chan string
 	// It starts the reading process. It must be called before Words() is called.
-	Prepare() error
+	Prepare(ctx context.Context) error
 }
 
 type ReaderOptions struct {

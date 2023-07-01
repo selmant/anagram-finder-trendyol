@@ -10,21 +10,21 @@ import (
 type URLReader struct {
 	client       *http.Client
 	url          string
-	wordsChannel chan string
+	linesChannel chan string
 	options      ReaderOptions
 }
 
 const ten = 10 * time.Second // 10s
 
 func NewURLReader(url string, options ReaderOptions) URLReader {
-	wordsChannel := make(chan string, options.WordsChannelSize)
+	linesChannel := make(chan string, options.WordsChannelSize)
 	var netClient = &http.Client{
 		Timeout: ten,
 	}
 
 	return URLReader{
 		url:          url,
-		wordsChannel: wordsChannel,
+		linesChannel: linesChannel,
 		options:      options,
 		client:       netClient,
 	}
@@ -45,20 +45,20 @@ func (f *URLReader) Prepare(ctx context.Context) error {
 	go func() {
 		for scanner.Scan() {
 			line := scanner.Text()
-			f.wordsChannel <- line
+			f.linesChannel <- line
 		}
-		close(f.wordsChannel)
+		close(f.linesChannel)
 		resp.Body.Close()
 	}()
 
 	return nil
 }
 
-func (f *URLReader) Words(_ context.Context) <-chan string {
+func (f *URLReader) Lines(_ context.Context) <-chan string {
 	out := make(chan string, 1)
 	go func() {
-		for word := range f.wordsChannel {
-			out <- word
+		for line := range f.linesChannel {
+			out <- line
 		}
 		close(out)
 	}()
