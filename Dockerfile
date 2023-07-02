@@ -10,4 +10,3 @@ RUN apk --no-cache add ca-certificates
 WORKDIR /app
 COPY --from=builder /app/anagram-finder-trendyol .
 ENTRYPOINT ["/app/anagram-finder-trendyol"]
-#CMD ["tail", "-f", "/dev/null"]

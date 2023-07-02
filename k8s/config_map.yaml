@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: anagram-finder-config
+data:
+  FILE_PATH: ""
+  URL: ""
+  REDIS_HOST: ""
+  REDIS_PORT: "0"
+  REDIS_PASSWORD: ""
+  REDIS_DB: "0"
+  STORAGE_TYPE: "local"
+  WORKER_POOL_SIZE: "16"
+  WORDS_CHANNEL_SIZE: "8"
+  LOG_LEVEL: "4"

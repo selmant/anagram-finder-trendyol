@@ -25,19 +25,19 @@ func (app *AnagramApplication) Run(ctx context.Context) error {
 		return err
 	}
 
-	err = app.hashAndStore(ctx)
+	err = app.HashAndStore(ctx)
 	if err != nil {
-		// TODO: handle error
+		// since we ignore the input errors, we can continue if there is an error in the storage
 		log.Error(err)
 	}
-	err = app.printAnagrams(ctx)
+	err = app.PrintAnagrams(ctx)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (app *AnagramApplication) hashAndStore(ctx context.Context) error {
+func (app *AnagramApplication) HashAndStore(ctx context.Context) error {
 	start := time.Now()
 	job := internal.NewReadAndMatchAnagramJob(app.AnagramStorage, app.Input)
 	pool := internal.NewWorkerPool(config.GlobalConfig.WorkerPoolSize, job)
@@ -49,7 +49,7 @@ func (app *AnagramApplication) hashAndStore(ctx context.Context) error {
 	return nil
 }
 
-func (app *AnagramApplication) printAnagrams(ctx context.Context) error {
+func (app *AnagramApplication) PrintAnagrams(ctx context.Context) error {
 	errSlice := make([]error, 0)
 	start := time.Now()
 	all, errs := app.AnagramStorage.AllAnagrams(ctx)
@@ -59,7 +59,7 @@ func (app *AnagramApplication) printAnagrams(ctx context.Context) error {
 			if !ok {
 				all = nil
 			} else if len(anagrams) > 1 {
-				//nolint:forbidigo // It's ok
+				//nolint:forbidigo // It's the main reason of this app
 				fmt.Println(strings.Join(anagrams, ", "))
 			}
 		case chanErr, ok := <-errs:

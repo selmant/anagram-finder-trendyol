@@ -45,6 +45,7 @@ func (b *AnagramApplicationBuilder) Build() (*AnagramApplication, error) {
 	if b.cfg == nil {
 		return nil, errors.New(ErrConfigNotSet)
 	}
+	config.GlobalConfig = b.cfg
 
 	if b.storageFactory == nil {
 		return nil, errors.New(ErrStorageFactoryNotSet)

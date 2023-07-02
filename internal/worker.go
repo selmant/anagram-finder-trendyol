@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"sync"
+	"sync/atomic"
 
 	"github.com/selmant/anagram-finder-trendyol/internal/input"
 	"github.com/selmant/anagram-finder-trendyol/internal/storage"
@@ -23,7 +24,7 @@ func NewWorkerPool(workerCount int, job Job) *WorkerPool {
 }
 
 func (p *WorkerPool) Start(ctx context.Context) error {
-	doneJobCount := 0
+	var doneJobCount atomic.Int32
 
 	wg := &sync.WaitGroup{}
 	wg.Add(p.workerCount)
@@ -33,8 +34,8 @@ func (p *WorkerPool) Start(ctx context.Context) error {
 		go func() {
 			defer func() {
 				wg.Done()
-				doneJobCount++
-				if doneJobCount == p.workerCount {
+
+				if int(doneJobCount.Add(1)) == p.workerCount {
 					log.Debug("All workers finished")
 					close(errChannel)
 				}

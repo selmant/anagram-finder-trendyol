@@ -1,0 +1,35 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: anagram-finder-job
+spec:
+  template:
+    spec:
+      containers:
+        - name: anagram-finder-container
+          image: your-docker-image:tag
+          command: ["/app/anagram-finder-trendyol"]
+          args:
+            - "/app/anagram-finder-trendyol"
+            - "--file"
+            - "$(TEXT_FILE)"
+            - "--redis-host"
+            - "$(ANAGRAM_FINDER_REDIS_HOST)"
+            - "--redis-port"
+            - "$(ANAGRAM_FINDER_REDIS_PORT)"
+            - "--redis-password"
+            - "$(ANAGRAM_FINDER_REDIS_PASSWORD)"
+            - "--redis-db"
+            - "$(ANAGRAM_FINDER_REDIS_DB)"
+            - "--storage-type"
+            - "$(ANAGRAM_FINDER_STORAGE_TYPE)"
+            - "--worker-pool-size"
+            - "$(ANAGRAM_FINDER_WORKER_POOL_SIZE)"
+            - "--words-channel-size"
+            - "$(ANAGRAM_FINDER_WORDS_CHANNEL_SIZE)"
+            - "--log-level"
+            - "$(ANAGRAM_FINDER_LOG_LEVEL)"
+          envFrom:
+            - configMapRef:
+                name: anagram-finder-config
+      restartPolicy: Never

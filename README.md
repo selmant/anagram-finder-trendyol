@@ -56,5 +56,12 @@ With Local (200.000 words) hashmap with mutex
 
 ```
 
+# K8s
+```
+I have not tested it but I think it makes sense to run the application in a k8s cluster.
+- use env maps for configuration
+- pass env maps to the container
+```
+
 # Notes
 .golangci.yaml from https://gist.github.com/maratori/47a4d00457a92aa426dbd48a18776322#file-golangci-yml
