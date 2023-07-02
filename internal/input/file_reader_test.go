@@ -7,9 +7,18 @@ import (
 	"testing"
 	"time"
 
+	"github.com/selmant/anagram-finder-trendyol/app/config"
 	"github.com/selmant/anagram-finder-trendyol/internal/input"
 	"github.com/stretchr/testify/assert"
 )
+
+//nolint:gochecknoinits // this is test file
+func init() {
+	config.GlobalConfig = &config.Config{
+		WordsChannelSize: 8,
+		WorkerPoolSize:   16,
+	}
+}
 
 func TestFileReaderFileNotFound(t *testing.T) {
 	ctx := context.Background()
