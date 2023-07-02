@@ -60,19 +60,19 @@ type Job interface {
 	Process(ctx context.Context) error
 }
 
-type HashAndStoreAnagramJob struct {
+type ReadAndMatchAnagramJob struct {
 	storage storage.Storage
 	input   input.DataReader
 }
 
-func NewHashAndStoreAnagramJob(storage storage.Storage, input input.DataReader) *HashAndStoreAnagramJob {
-	return &HashAndStoreAnagramJob{
+func NewReadAndMatchAnagramJob(storage storage.Storage, input input.DataReader) *ReadAndMatchAnagramJob {
+	return &ReadAndMatchAnagramJob{
 		storage: storage,
 		input:   input,
 	}
 }
 
-func (j *HashAndStoreAnagramJob) Process(ctx context.Context) error {
+func (j *ReadAndMatchAnagramJob) Process(ctx context.Context) error {
 	errs := make([]error, 0)
 	for line := range j.input.Lines(ctx) {
 		letterMap, err := NewAnagramLetterMap(line)

@@ -15,7 +15,7 @@ func TestFileReaderFileNotFound(t *testing.T) {
 	ctx := context.Background()
 	assert := assert.New(t)
 
-	fr := input.NewFileReader("unexistedfile.txt", input.DefaultFileReaderOptions())
+	fr := input.NewFileReader("unexistedfile.txt")
 
 	err := fr.Prepare(ctx)
 	assert.Error(err)
@@ -35,7 +35,7 @@ func TestFileReaderFileFound(t *testing.T) {
 	}
 	defer os.Remove(f.Name())
 
-	fr := input.NewFileReader(f.Name(), input.DefaultFileReaderOptions())
+	fr := input.NewFileReader(f.Name())
 
 	err = fr.Prepare(ctx)
 	assert.NoError(err)
@@ -55,7 +55,7 @@ func TestFileReaderReadSingleLine(t *testing.T) {
 	}
 	defer os.Remove(f.Name())
 
-	fr := input.NewFileReader(f.Name(), input.DefaultFileReaderOptions())
+	fr := input.NewFileReader(f.Name())
 
 	err = fr.Prepare(ctx)
 	assert.NoError(err)
@@ -79,7 +79,7 @@ func TestFileReaderReadMultipleLines(t *testing.T) {
 	}
 	defer os.Remove(f.Name())
 
-	fr := input.NewFileReader(f.Name(), input.DefaultFileReaderOptions())
+	fr := input.NewFileReader(f.Name())
 
 	err = fr.Prepare(ctx)
 	assert.NoError(err)
@@ -107,7 +107,7 @@ func TestFileReaderConcurrentRead(t *testing.T) {
 	}
 	defer os.Remove(f.Name())
 
-	fr := input.NewFileReader(f.Name(), input.DefaultFileReaderOptions())
+	fr := input.NewFileReader(f.Name())
 
 	err = fr.Prepare(ctx)
 	assert.NoError(err)

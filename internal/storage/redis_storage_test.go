@@ -15,7 +15,7 @@ func TestRedisStorageGet(t *testing.T) {
 	assert := assert.New(t)
 
 	client, mock := redismock.NewClientMock()
-	redisStorage := storage.NewRedisStorage(*client)
+	redisStorage := storage.NewRedisStorage(client)
 
 	mock.ExpectSMembers("key").SetVal([]string{"test"})
 	anagrams, err := redisStorage.Get(ctx, "key")
@@ -32,7 +32,7 @@ func TestWordIsStoredInRedisStorage(t *testing.T) {
 	assert := assert.New(t)
 
 	client, mock := redismock.NewClientMock()
-	redisStorage := storage.NewRedisStorage(*client)
+	redisStorage := storage.NewRedisStorage(client)
 	mock.ExpectSAdd("key", "test").SetVal(1)
 
 	err := redisStorage.Store(ctx, "key", "test")
@@ -47,7 +47,7 @@ func TestAllAnagrams(t *testing.T) {
 	assert := assert.New(t)
 
 	client, mock := redismock.NewClientMock()
-	redisStorage := storage.NewRedisStorage(*client)
+	redisStorage := storage.NewRedisStorage(client)
 
 	mock.ExpectScan(0, "*", 0).SetVal([]string{"key", "key2"}, 1)
 	mock.ExpectSMembers("key").SetVal([]string{"test", "sett"})
@@ -81,7 +81,7 @@ func TestAllAnagramsWithError(t *testing.T) {
 	assert := assert.New(t)
 
 	client, mock := redismock.NewClientMock()
-	redisStorage := storage.NewRedisStorage(*client)
+	redisStorage := storage.NewRedisStorage(client)
 
 	mock.ExpectScan(0, "*", 0).SetVal([]string{"key2"}, 1)
 	mock.ExpectSMembers("key2").SetErr(errors.New("error"))

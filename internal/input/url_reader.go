@@ -5,27 +5,27 @@ import (
 	"context"
 	"net/http"
 	"time"
+
+	"github.com/selmant/anagram-finder-trendyol/app/config"
 )
 
 type URLReader struct {
 	client       *http.Client
 	url          string
 	linesChannel chan string
-	options      ReaderOptions
 }
 
 const ten = 10 * time.Second // 10s
 
-func NewURLReader(url string, options ReaderOptions) URLReader {
-	linesChannel := make(chan string, options.WordsChannelSize)
+func NewURLReader(url string) *URLReader {
+	linesChannel := make(chan string, config.Cfg.WordsChannelSize)
 	var netClient = &http.Client{
 		Timeout: ten,
 	}
 
-	return URLReader{
+	return &URLReader{
 		url:          url,
 		linesChannel: linesChannel,
-		options:      options,
 		client:       netClient,
 	}
 }

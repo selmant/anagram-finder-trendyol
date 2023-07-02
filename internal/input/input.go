@@ -9,14 +9,3 @@ type DataReader interface {
 	// It starts the reading process. It must be called before Words() is called.
 	Prepare(ctx context.Context) error
 }
-
-type ReaderOptions struct {
-	WordsChannelSize int
-}
-
-func DefaultFileReaderOptions() ReaderOptions {
-	channelSize := 8
-	return ReaderOptions{
-		WordsChannelSize: channelSize,
-	}
-}

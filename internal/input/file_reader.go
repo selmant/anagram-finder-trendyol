@@ -4,21 +4,21 @@ import (
 	"bufio"
 	"context"
 	"os"
+
+	"github.com/selmant/anagram-finder-trendyol/app/config"
 )
 
 type FileReader struct {
 	path         string
 	linesChannel chan string
-	options      ReaderOptions
 }
 
-func NewFileReader(path string, options ReaderOptions) FileReader {
-	linesChannel := make(chan string, options.WordsChannelSize)
+func NewFileReader(path string) *FileReader {
+	linesChannel := make(chan string, config.Cfg.WordsChannelSize)
 
-	return FileReader{
+	return &FileReader{
 		path:         path,
 		linesChannel: linesChannel,
-		options:      options,
 	}
 }
 

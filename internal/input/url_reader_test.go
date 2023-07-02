@@ -17,7 +17,7 @@ func TestUrlReaderUrlNotFound(t *testing.T) {
 	ctx := context.Background()
 	assert := assert.New(t)
 
-	fr := input.NewURLReader("http://nonexisturl", input.DefaultFileReaderOptions())
+	fr := input.NewURLReader("http://nonexisturl")
 
 	err := fr.Prepare(ctx)
 	assert.Error(err)
@@ -32,7 +32,7 @@ func TestUrlReaderUrlFound(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	fr := input.NewURLReader(ts.URL, input.DefaultFileReaderOptions())
+	fr := input.NewURLReader(ts.URL)
 
 	err := fr.Prepare(ctx)
 	assert.NoError(err)
@@ -47,7 +47,7 @@ func TestUrlReaderReadMultipleLines(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	ur := input.NewURLReader(ts.URL, input.DefaultFileReaderOptions())
+	ur := input.NewURLReader(ts.URL)
 
 	err := ur.Prepare(ctx)
 	assert.NoError(err)
@@ -70,7 +70,7 @@ func TestUrlReaderConcurrentRead(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	fr := input.NewURLReader(ts.URL, input.DefaultFileReaderOptions())
+	fr := input.NewURLReader(ts.URL)
 
 	err := fr.Prepare(ctx)
 	assert.NoError(err)
