@@ -6,6 +6,8 @@ import (
 
 	"github.com/selmant/anagram-finder-trendyol/app"
 	"github.com/selmant/anagram-finder-trendyol/app/config"
+	"github.com/selmant/anagram-finder-trendyol/internal/input"
+	"github.com/selmant/anagram-finder-trendyol/internal/storage"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -15,8 +17,16 @@ func main() {
 
 	log.Debug("Starting the application")
 
-	application := app.NewAnagramApplication(cfg)
-	err := application.Run(context.Background())
+	application, err := app.NewAnagramApplicationBuilder().
+		WithConfig(&cfg).
+		WithStorageFactory(&storage.UnifiedStorageFactory{}).
+		WithReaderFactory(&input.UnifiedReaderFactory{}).
+		Build()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = application.Run(context.Background())
 	if err != nil {
 		log.Fatal(err)
 	}

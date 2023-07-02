@@ -19,37 +19,6 @@ type AnagramApplication struct {
 	AnagramStorage storagelib.Storage
 }
 
-func NewAnagramApplication(cfg config.Config) *AnagramApplication {
-	log.Info("Redis storage is selected")
-	config.GlobalConfig = &cfg
-	var reader input.DataReader
-	if cfg.Input.File.Path != "" {
-		reader = input.NewFileReader(cfg.Input.File.Path)
-	} else {
-		reader = input.NewURLReader(cfg.Input.URL.URL)
-	}
-
-	var storage storagelib.Storage
-
-	if cfg.StorageType == config.StorageTypeLocal {
-		storage = storagelib.NewLocalStorage()
-	} else {
-		log.Info("Redis storage is selected")
-		redisClient := storagelib.NewRedisClient(cfg.Redis.Host, cfg.Redis.Port, cfg.Redis.Password, cfg.Redis.DB)
-		if cmd := redisClient.Ping(context.Background()); cmd.Err() != nil {
-			log.Fatal(cmd.Err())
-		}
-		log.Info("Redis client created")
-		storage = storagelib.NewRedisStorage(redisClient)
-		log.Info("Redis storage created")
-	}
-
-	return &AnagramApplication{
-		Input:          reader,
-		AnagramStorage: storage,
-	}
-}
-
 func (app *AnagramApplication) Run(ctx context.Context) error {
 	err := app.Input.Prepare(context.Background())
 	if err != nil {

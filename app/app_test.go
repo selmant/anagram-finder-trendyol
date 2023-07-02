@@ -2,7 +2,6 @@ package app_test
 
 import (
 	"context"
-	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -54,7 +53,4 @@ func (i *MockInputReader) Lines(_ context.Context) <-chan string {
 func (i *MockInputReader) Prepare(_ context.Context) error {
 	i.PrepareCallCount++
 	return nil
-}
-
-func TestWorkePoolStart(t *testing.T) {
 }
