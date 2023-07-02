@@ -14,7 +14,7 @@ type FileReader struct {
 }
 
 func NewFileReader(path string) *FileReader {
-	linesChannel := make(chan string, config.Cfg.WordsChannelSize)
+	linesChannel := make(chan string, config.GlobalConfig.WordsChannelSize)
 
 	return &FileReader{
 		path:         path,

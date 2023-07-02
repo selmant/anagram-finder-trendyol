@@ -3,7 +3,7 @@ package config
 type StorageType string
 
 //nolint:gochecknoglobals // it is a config package
-var Cfg *Config
+var GlobalConfig *Config
 
 const (
 	StorageTypeRedis StorageType = "redis"

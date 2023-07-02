@@ -25,17 +25,26 @@ func main() {
 func buildConfig() config.Config {
 	var textFilePath, url, redisHost, redisPassword, storageType string
 	var redisPort, redisDB, workerPoolSize, wordsChannelSize int
-	flag.StringVar(&textFilePath, "file", "", "Path to the text file to be processed")
-	flag.StringVar(&url, "url", "", "URL to the text file to be processed")
-	flag.StringVar(&redisHost, "redis-host", "", "Redis host")
-	flag.IntVar(&redisPort, "redis-port", 0, "Redis port")
-	flag.StringVar(&redisPassword, "redis-password", "", "Redis password")
-	flag.IntVar(&redisDB, "redis-db", 0, "Redis database")
+	flag.StringVar(&textFilePath, "file", "",
+		"Path to the text file to be processed. It is required if url is not given")
+	flag.StringVar(&url, "url", "",
+		"URL to the text file to be processed. It is required if file is not given")
+	flag.StringVar(&redisHost, "redis-host", "",
+		"Redis host")
+	flag.IntVar(&redisPort, "redis-port", 0,
+		"Redis port")
+	flag.StringVar(&redisPassword, "redis-password", "",
+		"Redis password")
+	flag.IntVar(&redisDB, "redis-db", 0,
+		"Redis db for storage. The given db will be flushed before the application starts")
 
 	// default values
-	flag.StringVar(&storageType, "storage-type", "local", "Storage type (local or redis)")
-	flag.IntVar(&workerPoolSize, "worker-pool-size", 16, "Worker pool size")
-	flag.IntVar(&wordsChannelSize, "words-channel-size", 8, "Words channel size")
+	flag.StringVar(&storageType, "storage-type", "local",
+		"Storage type (local or redis). Default is local")
+	flag.IntVar(&workerPoolSize, "worker-pool-size", 16,
+		"Worker pool size. Default is 16")
+	flag.IntVar(&wordsChannelSize, "words-channel-size", 8,
+		"Words channel size. Default is 8")
 
 	flag.Parse()
 

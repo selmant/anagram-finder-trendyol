@@ -18,7 +18,7 @@ type URLReader struct {
 const ten = 10 * time.Second // 10s
 
 func NewURLReader(url string) *URLReader {
-	linesChannel := make(chan string, config.Cfg.WordsChannelSize)
+	linesChannel := make(chan string, config.GlobalConfig.WordsChannelSize)
 	var netClient = &http.Client{
 		Timeout: ten,
 	}

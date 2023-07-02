@@ -10,18 +10,17 @@ import (
 	"github.com/selmant/anagram-finder-trendyol/app/config"
 	"github.com/selmant/anagram-finder-trendyol/internal"
 	"github.com/selmant/anagram-finder-trendyol/internal/input"
-	"github.com/selmant/anagram-finder-trendyol/internal/storage"
 	storagelib "github.com/selmant/anagram-finder-trendyol/internal/storage"
 	log "github.com/sirupsen/logrus"
 )
 
 type AnagramApplication struct {
 	Input          input.DataReader
-	AnagramStorage storage.Storage
+	AnagramStorage storagelib.Storage
 }
 
 func NewAnagramApplication(cfg config.Config) *AnagramApplication {
-	config.Cfg = &cfg
+	config.GlobalConfig = &cfg
 	var reader input.DataReader
 	if cfg.Input.File.Path != "" {
 		reader = input.NewFileReader(cfg.Input.File.Path)
@@ -65,7 +64,7 @@ func (app *AnagramApplication) Run(ctx context.Context) error {
 func (app *AnagramApplication) hashAndStore(ctx context.Context) error {
 	start := time.Now()
 	job := internal.NewReadAndMatchAnagramJob(app.AnagramStorage, app.Input)
-	pool := internal.NewWorkerPool(8, job)
+	pool := internal.NewWorkerPool(config.GlobalConfig.WorkerPoolSize, job)
 	err := pool.Start(ctx)
 	if err != nil {
 		return err
