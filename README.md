@@ -5,6 +5,42 @@
 - all words are in english
 - there cannot be more than 255 identical characters in a word. (uint8 limit)
 
+# How to run
+After building the project, you can run the binary with the following command
+```
+Usage of ./anagram-finder-trendyol:
+  -file string
+        Path to the text file to be processed. It is required if url is not given
+  -log-level uint
+        Log level (0-6). Default is 4 (info) (default 4)
+  -redis-db int
+        Redis db for storage. The given db will be flushed before the application starts
+  -redis-host string
+        Redis host
+  -redis-password string
+        Redis password
+  -redis-port int
+        Redis port
+  -storage-type string
+        Storage type (local or redis). Default is local (default "local")
+  -url string
+        URL to the text file to be processed. It is required if file is not given
+  -words-channel-size int
+        Words channel size. Default is 8 (default 8)
+  -worker-pool-size int
+        Worker pool size. Default is 16 (default 16)
+```
+example:
+```./anagram-finder-trendyol --url https://raw.githubusercontent.com/Trendyol/assignments/main/anagrams.txt --storage-type redis --redis-host localhost --redis-port 6379 --log-level 4 ```
+# How to run with docker
+``` 
+    if you want to use redis as storage, you should run redis first
+docker run --name redis -d redis
+
+docker build -t anagram-trendyol .
+docker run anagram-trendyol --url https://raw.githubusercontent.com/Trendyol/assignments/main/anagrams.txt --storage-type redis --redis-host 172.17.0.2 --redis-port 6379 --log-level 4
+```
+
 # Benchmark
 ```
 With Redis (200.000 words) 
@@ -20,6 +56,5 @@ With Local (200.000 words) hashmap with mutex
 
 ```
 
-
-
+# Notes
 .golangci.yaml from https://gist.github.com/maratori/47a4d00457a92aa426dbd48a18776322#file-golangci-yml

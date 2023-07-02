@@ -10,9 +10,10 @@ import (
 )
 
 func main() {
-	log.Info("Starting the application")
-
 	cfg := buildConfig()
+	log.SetLevel(log.Level(cfg.LogLevel))
+
+	log.Debug("Starting the application")
 
 	application := app.NewAnagramApplication(cfg)
 	err := application.Run(context.Background())
@@ -25,6 +26,7 @@ func main() {
 func buildConfig() config.Config {
 	var textFilePath, url, redisHost, redisPassword, storageType string
 	var redisPort, redisDB, workerPoolSize, wordsChannelSize int
+	var logLevel uint
 	flag.StringVar(&textFilePath, "file", "",
 		"Path to the text file to be processed. It is required if url is not given")
 	flag.StringVar(&url, "url", "",
@@ -45,6 +47,8 @@ func buildConfig() config.Config {
 		"Worker pool size. Default is 16")
 	flag.IntVar(&wordsChannelSize, "words-channel-size", 8,
 		"Words channel size. Default is 8")
+	flag.UintVar(&logLevel, "log-level", 4,
+		"Log level (0-6). Default is 4 (info)")
 
 	flag.Parse()
 
@@ -80,6 +84,7 @@ func buildConfig() config.Config {
 		StorageType:      config.StorageType(storageType),
 		WorkerPoolSize:   workerPoolSize,
 		WordsChannelSize: wordsChannelSize,
+		LogLevel:         logLevel,
 	}
 	return cfg
 }

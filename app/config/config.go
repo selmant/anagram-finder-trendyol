@@ -28,4 +28,5 @@ type Config struct {
 	}
 	WorkerPoolSize   int
 	WordsChannelSize int
+	LogLevel         uint
 }

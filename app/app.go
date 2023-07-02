@@ -20,6 +20,7 @@ type AnagramApplication struct {
 }
 
 func NewAnagramApplication(cfg config.Config) *AnagramApplication {
+	log.Info("Redis storage is selected")
 	config.GlobalConfig = &cfg
 	var reader input.DataReader
 	if cfg.Input.File.Path != "" {
@@ -33,8 +34,14 @@ func NewAnagramApplication(cfg config.Config) *AnagramApplication {
 	if cfg.StorageType == config.StorageTypeLocal {
 		storage = storagelib.NewLocalStorage()
 	} else {
+		log.Info("Redis storage is selected")
 		redisClient := storagelib.NewRedisClient(cfg.Redis.Host, cfg.Redis.Port, cfg.Redis.Password, cfg.Redis.DB)
+		if cmd := redisClient.Ping(context.Background()); cmd.Err() != nil {
+			log.Fatal(cmd.Err())
+		}
+		log.Info("Redis client created")
 		storage = storagelib.NewRedisStorage(redisClient)
+		log.Info("Redis storage created")
 	}
 
 	return &AnagramApplication{
