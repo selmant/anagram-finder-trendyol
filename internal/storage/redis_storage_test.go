@@ -107,3 +107,19 @@ func TestAllAnagramsWithError(t *testing.T) {
 
 	assert.Equal(errCount, 1)
 }
+
+func TestNewRedisClient(t *testing.T) {
+	assert := assert.New(t)
+
+	client := storage.NewRedisClient("localhost", 0, "", 0)
+	assert.NotNil(client)
+	assert.Equal(client.Options().Addr, "localhost")
+}
+
+func TestNewRedisClientWithPort(t *testing.T) {
+	assert := assert.New(t)
+
+	client := storage.NewRedisClient("localhost", 6379, "", 0)
+	assert.NotNil(client)
+	assert.Equal(client.Options().Addr, "localhost:6379")
+}
