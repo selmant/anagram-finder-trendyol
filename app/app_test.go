@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+//nolint:gochecknoinits // this is test file
 func init() {
 	config.GlobalConfig = &config.Config{}
 	config.GlobalConfig.WorkerPoolSize = 1
