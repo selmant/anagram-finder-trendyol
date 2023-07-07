@@ -2,7 +2,7 @@ package input
 
 import (
 	"context"
-	"log"
+	"errors"
 
 	"github.com/selmant/anagram-finder-trendyol/app/config"
 )
@@ -16,18 +16,17 @@ type DataReader interface {
 }
 
 type Factory interface {
-	CreateReader(cfg *config.Config) DataReader
+	CreateReader(cfg *config.Config) (DataReader, error)
 }
 
 type UnifiedReaderFactory struct{}
 
-func (f *UnifiedReaderFactory) CreateReader(cfg *config.Config) DataReader {
+func (f *UnifiedReaderFactory) CreateReader(cfg *config.Config) (DataReader, error) {
 	if cfg.Input.File.Path != "" {
-		return NewFileReader(cfg.Input.File.Path)
+		return NewFileReader(cfg.Input.File.Path), nil
 	}
 	if cfg.Input.URL.URL != "" {
-		return NewURLReader(cfg.Input.URL.URL)
+		return NewURLReader(cfg.Input.URL.URL), nil
 	}
-	log.Fatal("Invalid input type")
-	return nil
+	return nil, errors.New("invalid input type")
 }

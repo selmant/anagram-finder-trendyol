@@ -2,9 +2,14 @@ package storage
 
 import (
 	"context"
+	"errors"
 
 	"github.com/selmant/anagram-finder-trendyol/app/config"
-	log "github.com/sirupsen/logrus"
+)
+
+const (
+	ErrRedisClientPingFailed = "redis client ping failed"
+	ErrInvalidStorageType    = "invalid storage type"
 )
 
 type Storage interface {
@@ -19,23 +24,22 @@ type Storage interface {
 
 type Factory interface {
 	// It creates a new storage based on the configuration. It panics if the configuration is invalid.
-	CreateStorage(cfg *config.Config) Storage
+	CreateStorage(cfg *config.Config) (Storage, error)
 }
 
 type UnifiedStorageFactory struct{}
 
-func (f *UnifiedStorageFactory) CreateStorage(cfg *config.Config) Storage {
+func (f *UnifiedStorageFactory) CreateStorage(cfg *config.Config) (Storage, error) {
 	switch cfg.StorageType {
 	case config.StorageTypeLocal:
-		return NewLocalStorage()
+		return NewLocalStorage(), nil
 	case config.StorageTypeRedis:
 		redisClient := NewRedisClient(cfg.Redis.Host, cfg.Redis.Port, cfg.Redis.Password, cfg.Redis.DB)
 		if cmd := redisClient.Ping(context.Background()); cmd.Err() != nil {
-			log.Fatal(cmd.Err())
+			return nil, errors.New(ErrRedisClientPingFailed)
 		}
-		return NewRedisStorage(redisClient)
+		return NewRedisStorage(redisClient), nil
 	default:
-		log.Fatalf("Invalid storage type: %s", cfg.StorageType)
-		return nil
+		return nil, errors.New(ErrInvalidStorageType)
 	}
 }

@@ -20,12 +20,16 @@ func TestInputReaderFactoryReturnsFileReader(t *testing.T) {
 	factory := input.UnifiedReaderFactory{}
 	cfgFile := config.Config{}
 	cfgFile.Input.File.Path = "test"
-	assert.IsType(t, new(input.FileReader), factory.CreateReader(&cfgFile))
+	reader, err := factory.CreateReader(&cfgFile)
+	assert.Nil(t, err)
+	assert.IsType(t, new(input.FileReader), reader)
 }
 
 func TestInputReaderFactoryReturnsUrlReader(t *testing.T) {
 	factory := input.UnifiedReaderFactory{}
 	cfgURL := config.Config{}
 	cfgURL.Input.URL.URL = "test"
-	assert.IsType(t, new(input.URLReader), factory.CreateReader(&cfgURL))
+	reader, err := factory.CreateReader(&cfgURL)
+	assert.Nil(t, err)
+	assert.IsType(t, new(input.URLReader), reader)
 }

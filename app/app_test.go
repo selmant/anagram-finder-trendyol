@@ -2,7 +2,7 @@ package app_test
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"os"
 	"testing"
 
@@ -104,7 +104,7 @@ func TestAppPrintAnagrams(t *testing.T) {
 	assert.NoError(t, err)
 
 	w.Close()
-	out, _ := ioutil.ReadAll(r)
+	out, _ := io.ReadAll(r)
 	os.Stdout = rescueStdout
 
 	assert.Equal(t, "abc, acb\nbac, bca\n", string(out))
@@ -131,7 +131,7 @@ func TestAppPrintAnagramsError(t *testing.T) {
 	assert.Error(t, err)
 
 	w.Close()
-	out, _ := ioutil.ReadAll(r)
+	out, _ := io.ReadAll(r)
 	os.Stdout = rescueStdout
 
 	assert.Equal(t, "", string(out))

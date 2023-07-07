@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 
 	"github.com/selmant/anagram-finder-trendyol/app"
@@ -11,8 +12,18 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const (
+	ErrMultipleInputSet = "Please provide only one of the text file path or the URL"
+	ErrNoInputSet       = "Please provide one of the text file path or the URL"
+	ErrStorageType      = "Please provide a valid storage type"
+)
+
 func main() {
-	cfg := buildConfig()
+	cfg, err := buildConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	log.SetLevel(log.Level(cfg.LogLevel))
 
 	log.Debug("Starting the application")
@@ -33,7 +44,7 @@ func main() {
 }
 
 //nolint:gomnd // magic numbers are used for default values
-func buildConfig() config.Config {
+func buildConfig() (config.Config, error) {
 	var textFilePath, url, redisHost, redisPassword, storageType string
 	var redisPort, redisDB, workerPoolSize, wordsChannelSize int
 	var logLevel uint
@@ -63,13 +74,13 @@ func buildConfig() config.Config {
 	flag.Parse()
 
 	if textFilePath != "" && url != "" {
-		log.Fatal("Please provide only one of the text file path or the URL")
+		return config.Config{}, errors.New(ErrMultipleInputSet)
 	} else if textFilePath == "" && url == "" {
-		log.Fatal("Please provide a text file path or a URL")
+		return config.Config{}, errors.New(ErrNoInputSet)
 	}
 
 	if storageType != "local" && storageType != "redis" {
-		log.Fatal("Storage type must be either local or redis")
+		return config.Config{}, errors.New(ErrStorageType)
 	}
 
 	cfg := config.Config{
@@ -96,5 +107,5 @@ func buildConfig() config.Config {
 		WordsChannelSize: wordsChannelSize,
 		LogLevel:         logLevel,
 	}
-	return cfg
+	return cfg, nil
 }

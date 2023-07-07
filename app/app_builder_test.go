@@ -12,14 +12,14 @@ import (
 
 type MockReaderFactory struct{}
 
-func (m MockReaderFactory) CreateReader(_ *config.Config) input.DataReader {
-	return &MockInputReader{}
+func (m MockReaderFactory) CreateReader(_ *config.Config) (input.DataReader, error) {
+	return &MockInputReader{}, nil
 }
 
 type MockStorageFactory struct{}
 
-func (m MockStorageFactory) CreateStorage(_ *config.Config) storage.Storage {
-	return &MockStorage{}
+func (m MockStorageFactory) CreateStorage(_ *config.Config) (storage.Storage, error) {
+	return &MockStorage{}, nil
 }
 
 func TestBuilderGivesErrorWhenInputReaderIsNotSet(t *testing.T) {

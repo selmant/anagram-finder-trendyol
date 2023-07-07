@@ -55,8 +55,15 @@ func (b *AnagramApplicationBuilder) Build() (*AnagramApplication, error) {
 		return nil, errors.New(ErrReaderFactoryNotSet)
 	}
 
-	storage := b.storageFactory.CreateStorage(b.cfg)
-	reader := b.readerFactory.CreateReader(b.cfg)
+	storage, err := b.storageFactory.CreateStorage(b.cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	reader, err := b.readerFactory.CreateReader(b.cfg)
+	if err != nil {
+		return nil, err
+	}
 
 	if storage == nil {
 		return nil, errors.New(ErrFailedToCreateStorage)

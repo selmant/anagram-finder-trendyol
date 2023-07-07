@@ -19,11 +19,15 @@ func TestRedisStorageIsAnagramStorage(t *testing.T) {
 func TestStorageFactoryReturnsLocalStorage(t *testing.T) {
 	factory := storage.UnifiedStorageFactory{}
 	localCfg := config.Config{StorageType: config.StorageTypeLocal}
-	assert.IsType(t, new(storage.LocalStorage), factory.CreateStorage(&localCfg))
+	storge, err := factory.CreateStorage(&localCfg)
+	assert.Nil(t, err)
+	assert.IsType(t, new(storage.LocalStorage), storge)
 }
 
 func TestStorageFactoryReturnsRedisStorage(t *testing.T) {
 	factory := storage.UnifiedStorageFactory{}
 	redisCfg := config.Config{StorageType: config.StorageTypeRedis}
-	assert.IsType(t, new(storage.RedisStorage), factory.CreateStorage(&redisCfg))
+	storge, err := factory.CreateStorage(&redisCfg)
+	assert.Nil(t, err)
+	assert.IsType(t, new(storage.RedisStorage), storge)
 }
