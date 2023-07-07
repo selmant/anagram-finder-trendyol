@@ -7,6 +7,12 @@ import (
 	"github.com/selmant/anagram-finder-trendyol/app/config"
 )
 
+type AnagramResult struct {
+	HashKey  string
+	Anagrams []string
+	Error    error
+}
+
 const (
 	ErrRedisClientPingFailed = "redis client ping failed"
 	ErrInvalidStorageType    = "invalid storage type"
@@ -19,7 +25,7 @@ type Storage interface {
 	Get(ctx context.Context, hashKey string) ([]string, error)
 	// It returns the channel of anagrams with coma seperated for all words in the storage. The channel will be
 	// closed either when all the anagrams have been read or when an error occurs, signalled through the error channel.
-	AllAnagrams(ctx context.Context) (<-chan []string, <-chan error)
+	AllAnagrams(ctx context.Context) <-chan AnagramResult
 }
 
 type Factory interface {

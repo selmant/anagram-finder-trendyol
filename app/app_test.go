@@ -8,6 +8,7 @@ import (
 
 	"github.com/selmant/anagram-finder-trendyol/app"
 	"github.com/selmant/anagram-finder-trendyol/app/config"
+	"github.com/selmant/anagram-finder-trendyol/internal/storage"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -27,17 +28,15 @@ func (s *MockStorage) Store(_ context.Context, _, _ string) error {
 	return nil
 }
 
-func (s *MockStorage) AllAnagrams(_ context.Context) (<-chan []string, <-chan error) {
-	anagrams := make(chan []string)
-	errs := make(chan error)
+func (s *MockStorage) AllAnagrams(_ context.Context) <-chan storage.AnagramResult {
+	anagrams := make(chan storage.AnagramResult)
 	go func() {
-		anagrams <- []string{"test"}
-		anagrams <- []string{"abc", "acb"}
-		anagrams <- []string{"bac", "bca"}
+		anagrams <- storage.AnagramResult{HashKey: "test", Anagrams: []string{"test"}, Error: nil}
+		anagrams <- storage.AnagramResult{HashKey: "abc", Anagrams: []string{"abc", "acb"}, Error: nil}
+		anagrams <- storage.AnagramResult{HashKey: "bac", Anagrams: []string{"bac", "bca"}, Error: nil}
 		close(anagrams)
-		close(errs)
 	}()
-	return anagrams, errs
+	return anagrams
 }
 
 func (s *MockStorage) Get(_ context.Context, _ string) ([]string, error) {
@@ -53,15 +52,13 @@ func (s *MockStorageWithError) Store(_ context.Context, _, _ string) error {
 	return assert.AnError
 }
 
-func (s *MockStorageWithError) AllAnagrams(_ context.Context) (<-chan []string, <-chan error) {
-	errs := make(chan error)
-	anagrams := make(chan []string)
+func (s *MockStorageWithError) AllAnagrams(_ context.Context) <-chan storage.AnagramResult {
+	anagrams := make(chan storage.AnagramResult)
 	go func() {
-		errs <- assert.AnError
-		close(errs)
+		anagrams <- storage.AnagramResult{Error: assert.AnError}
 		close(anagrams)
 	}()
-	return anagrams, errs
+	return anagrams
 }
 
 func (s *MockStorageWithError) Get(_ context.Context, _ string) ([]string, error) {

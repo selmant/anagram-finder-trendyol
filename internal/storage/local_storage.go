@@ -32,16 +32,14 @@ func (s *LocalStorage) Get(_ context.Context, hashKey string) ([]string, error) 
 	return s.storage[hashKey], nil
 }
 
-func (s *LocalStorage) AllAnagrams(_ context.Context) (<-chan []string, <-chan error) {
-	out := make(chan []string, 1)
-	errors := make(chan error, 1)
+func (s *LocalStorage) AllAnagrams(_ context.Context) <-chan AnagramResult {
+	out := make(chan AnagramResult, 1)
 	go func() {
-		for _, anagrams := range s.storage {
-			out <- anagrams
+		for hashKey, anagrams := range s.storage {
+			out <- AnagramResult{hashKey, anagrams, nil}
 		}
 		close(out)
-		close(errors)
 		log.Info("All anagrams sent and channels are closed")
 	}()
-	return out, nil
+	return out
 }

@@ -52,24 +52,16 @@ func (app *AnagramApplication) HashAndStore(ctx context.Context) error {
 func (app *AnagramApplication) PrintAnagrams(ctx context.Context) error {
 	errSlice := make([]error, 0)
 	start := time.Now()
-	all, errs := app.AnagramStorage.AllAnagrams(ctx)
-	for all != nil || errs != nil {
-		select {
-		case anagrams, ok := <-all:
-			if !ok {
-				all = nil
-			} else if len(anagrams) > 1 {
-				//nolint:forbidigo // It's the main reason of this app
-				fmt.Println(strings.Join(anagrams, ", "))
-			}
-		case chanErr, ok := <-errs:
-			if !ok {
-				errs = nil
-			} else {
-				errSlice = append(errSlice, chanErr)
-			}
+	all := app.AnagramStorage.AllAnagrams(ctx)
+	for anagramResult := range all {
+		if anagramResult.Error != nil {
+			errSlice = append(errSlice, anagramResult.Error)
+		} else if len(anagramResult.Anagrams) > 1 {
+			//nolint:forbidigo // It's the main reason of this app
+			fmt.Println(strings.Join(anagramResult.Anagrams, ", "))
 		}
 	}
+
 	if len(errSlice) > 0 {
 		return errors.Join(errSlice...)
 	}

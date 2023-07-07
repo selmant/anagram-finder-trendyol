@@ -39,14 +39,12 @@ func (s *RedisStorage) Get(ctx context.Context, hashKey string) ([]string, error
 	return s.redisClient.SMembers(ctx, hashKey).Result()
 }
 
-func (s *RedisStorage) AllAnagrams(ctx context.Context) (<-chan []string, <-chan error) {
-	results := make(chan []string, 1)
-	errors := make(chan error, 1)
+func (s *RedisStorage) AllAnagrams(ctx context.Context) <-chan AnagramResult {
+	results := make(chan AnagramResult, 1)
 	go func() {
 		defer func() {
-			log.Info("Closing results and errors channels")
+			log.Info("Closing result channel")
 			close(results)
-			close(errors)
 		}()
 		keys := s.redisClient.Scan(ctx, 0, "*", 0).Iterator()
 		piped, err := s.redisClient.Pipelined(ctx, func(pipe redis.Pipeliner) error {
@@ -57,18 +55,18 @@ func (s *RedisStorage) AllAnagrams(ctx context.Context) (<-chan []string, <-chan
 			return nil
 		})
 		if err != nil {
-			errors <- err
+			results <- AnagramResult{Error: err}
 			return
 		}
 		for _, cmd := range piped {
 			err = cmd.Err()
 			if err != nil {
-				errors <- err
+				results <- AnagramResult{cmd.String(), nil, err}
 				return
 			}
 			anagrams := cmd.(*redis.StringSliceCmd).Val()
-			results <- anagrams
+			results <- AnagramResult{cmd.String(), anagrams, nil}
 		}
 	}()
-	return results, errors
+	return results
 }

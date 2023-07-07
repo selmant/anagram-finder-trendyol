@@ -52,24 +52,12 @@ func TestAllAnagrams(t *testing.T) {
 	mock.ExpectScan(0, "*", 0).SetVal([]string{"key", "key2"}, 1)
 	mock.ExpectSMembers("key").SetVal([]string{"test", "sett"})
 	mock.ExpectSMembers("key2").SetVal([]string{"asd", "dsa"})
-	all, errs := redisStorage.AllAnagrams(ctx)
+	all := redisStorage.AllAnagrams(ctx)
 
 	count := 0
-	for all != nil || errs != nil {
-		select {
-		case _, ok := <-all:
-			if !ok {
-				all = nil
-			} else {
-				count++
-			}
-		case chanErr, ok := <-errs:
-			if !ok {
-				errs = nil
-			} else {
-				assert.NoError(chanErr)
-			}
-		}
+	for r := range all {
+		count++
+		assert.NoError(r.Error)
 	}
 	err := mock.ExpectationsWereMet()
 	assert.NoError(err)
@@ -85,22 +73,12 @@ func TestAllAnagramsWithError(t *testing.T) {
 
 	mock.ExpectScan(0, "*", 0).SetVal([]string{"key2"}, 1)
 	mock.ExpectSMembers("key2").SetErr(errors.New("error"))
-	all, errs := redisStorage.AllAnagrams(ctx)
+	all := redisStorage.AllAnagrams(ctx)
 
 	errCount := 0
-	for all != nil || errs != nil {
-		select {
-		case _, ok := <-all:
-			if !ok {
-				all = nil
-			}
-		case _, ok := <-errs:
-			if !ok {
-				errs = nil
-			} else {
-				errCount++
-			}
-		}
+	for r := range all {
+		errCount++
+		assert.Error(r.Error)
 	}
 	err := mock.ExpectationsWereMet()
 	assert.NoError(err)

@@ -47,25 +47,19 @@ func TestAnagramsReturnsAll(t *testing.T) {
 	ls := storage.NewLocalStorage()
 	err := ls.Store(ctx, "key", "test")
 	assert.NoError(err)
-	err = ls.Store(ctx, "key", "test")
+	err = ls.Store(ctx, "key2", "test")
 	assert.NoError(err)
-	err = ls.Store(ctx, "key", "test")
+	err = ls.Store(ctx, "key3", "test")
 	assert.NoError(err)
 
-	all, errs := ls.AllAnagrams(ctx)
+	all := ls.AllAnagrams(ctx)
 
-	completed := false
-	for !completed {
-		select {
-		case anagrams := <-all:
-			assert.Equal(len(anagrams), 3)
-		case err = <-errs:
-			assert.NoError(err)
-		default:
-			completed = true
-		}
+	count := 0
+	for r := range all {
+		count++
+		assert.NoError(r.Error)
 	}
-	assert.True(true)
+	assert.Equal(3, count)
 }
 
 func TestAnagramsReturnsAllWithMultipleKeys(t *testing.T) {
@@ -80,24 +74,12 @@ func TestAnagramsReturnsAllWithMultipleKeys(t *testing.T) {
 	err = ls.Store(ctx, "key2", "test3")
 	assert.NoError(err)
 
-	all, errs := ls.AllAnagrams(ctx)
+	all := ls.AllAnagrams(ctx)
 
 	count := 0
-	for all != nil || errs != nil {
-		select {
-		case _, ok := <-all:
-			if !ok {
-				all = nil
-			} else {
-				count++
-			}
-		case chanErr, ok := <-errs:
-			if !ok {
-				errs = nil
-			} else {
-				assert.NoError(chanErr)
-			}
-		}
+	for r := range all {
+		count++
+		assert.NoError(r.Error)
 	}
 	assert.Equal(2, count)
 }
