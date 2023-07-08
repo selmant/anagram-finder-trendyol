@@ -11,6 +11,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const (
+	ErrInputNotSet   = "input is not set"
+	ErrStorageNotSet = "storage is not set"
+)
+
 type WorkerPool struct {
 	workerCount int
 	job         Job
@@ -74,6 +79,14 @@ func NewReadAndMatchAnagramJob(storage storage.Storage, input input.DataReader) 
 }
 
 func (j *ReadAndMatchAnagramJob) Process(ctx context.Context) error {
+	if j.input == nil {
+		return errors.New(ErrInputNotSet)
+	}
+
+	if j.storage == nil {
+		return errors.New(ErrStorageNotSet)
+	}
+
 	errs := make([]error, 0)
 	for line := range j.input.Lines(ctx) {
 		letterMap, err := NewAnagramLetterMap(line)

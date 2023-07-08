@@ -43,12 +43,13 @@ func (f *URLReader) Prepare(ctx context.Context) error {
 
 	scanner := bufio.NewScanner(resp.Body)
 	go func() {
+		defer resp.Body.Close()
+		defer close(f.linesChannel)
+
 		for scanner.Scan() {
 			line := scanner.Text()
 			f.linesChannel <- line
 		}
-		close(f.linesChannel)
-		resp.Body.Close()
 	}()
 
 	return nil
@@ -57,10 +58,11 @@ func (f *URLReader) Prepare(ctx context.Context) error {
 func (f *URLReader) Lines(_ context.Context) <-chan string {
 	out := make(chan string, 1)
 	go func() {
+		defer close(out)
+
 		for line := range f.linesChannel {
 			out <- line
 		}
-		close(out)
 	}()
 	return out
 }

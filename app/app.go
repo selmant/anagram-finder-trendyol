@@ -14,12 +14,21 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const (
+	ErrInputNotSet   = "input is not set"
+	ErrStorageNotSet = "storage is not set"
+)
+
 type AnagramApplication struct {
 	Input          input.DataReader
 	AnagramStorage storagelib.Storage
 }
 
 func (app *AnagramApplication) Run(ctx context.Context) error {
+	if app.Input == nil {
+		return errors.New(ErrInputNotSet)
+	}
+
 	err := app.Input.Prepare(context.Background())
 	if err != nil {
 		return err
@@ -50,6 +59,10 @@ func (app *AnagramApplication) HashAndStore(ctx context.Context) error {
 }
 
 func (app *AnagramApplication) PrintAnagrams(ctx context.Context) error {
+	if app.AnagramStorage == nil {
+		return errors.New(ErrStorageNotSet)
+	}
+
 	errSlice := make([]error, 0)
 	start := time.Now()
 	all := app.AnagramStorage.AllAnagrams(ctx)

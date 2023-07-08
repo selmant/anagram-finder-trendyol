@@ -30,12 +30,13 @@ func (f *FileReader) Prepare(_ context.Context) error {
 
 	scanner := bufio.NewScanner(file)
 	go func() {
+		defer file.Close()
+		defer close(f.linesChannel)
+
 		for scanner.Scan() {
 			line := scanner.Text()
 			f.linesChannel <- line
 		}
-		file.Close()
-		close(f.linesChannel)
 	}()
 
 	return nil
@@ -44,10 +45,11 @@ func (f *FileReader) Prepare(_ context.Context) error {
 func (f *FileReader) Lines(_ context.Context) <-chan string {
 	out := make(chan string, 1)
 	go func() {
+		defer close(out)
+
 		for line := range f.linesChannel {
 			out <- line
 		}
-		close(out)
 	}()
 	return out
 }

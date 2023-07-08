@@ -14,8 +14,6 @@ const (
 	ErrWordMustNotBeEmpty     = "word must not be empty"
 )
 
-var ErrorWordMustNotBeEmpty = errors.New(ErrWordMustNotBeEmpty)
-
 type AnagramLetterMap [EnglishLetterCount]uint8
 
 func NewAnagramLetterMap(word string) (AnagramLetterMap, error) {
@@ -28,7 +26,7 @@ func NewAnagramLetterMap(word string) (AnagramLetterMap, error) {
 			continue
 		}
 		if c < 'a' || c > 'z' {
-			return AnagramLetterMap{}, ErrorWordMustNotBeEmpty
+			return AnagramLetterMap{}, errors.New(ErrLowerCaseLetters)
 		}
 		w[c-'a']++
 	}
