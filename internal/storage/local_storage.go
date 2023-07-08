@@ -43,3 +43,10 @@ func (s *LocalStorage) AllAnagrams(_ context.Context) <-chan AnagramResult {
 	}()
 	return out
 }
+
+func (s *LocalStorage) Clear(_ context.Context) error {
+	s.lock.Lock()
+	s.storage = make(map[string][]string)
+	s.lock.Unlock()
+	return nil
+}

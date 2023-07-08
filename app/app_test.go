@@ -6,130 +6,187 @@ import (
 	"os"
 	"testing"
 
+	"github.com/golang/mock/gomock"
+	mock_input "github.com/selmant/anagram-finder-trendyol/.mock/mock_internal/input"
+	mock_storage "github.com/selmant/anagram-finder-trendyol/.mock/mock_internal/storage"
 	"github.com/selmant/anagram-finder-trendyol/app"
 	"github.com/selmant/anagram-finder-trendyol/app/config"
 	"github.com/selmant/anagram-finder-trendyol/internal/storage"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
-//nolint:gochecknoinits // this is test file
-func init() {
+type AppTestSuite struct {
+	suite.Suite
+	ctrl             *gomock.Controller
+	mockInputReader  *mock_input.MockDataReader
+	mockAnagramStore *mock_storage.MockStorage
+}
+
+func (suite *AppTestSuite) SetupSuite() {
 	config.GlobalConfig = &config.Config{}
 	config.GlobalConfig.WorkerPoolSize = 1
 	config.GlobalConfig.WordsChannelSize = 8
 }
 
-type MockStorage struct {
-	StoreCallCount int
+func (suite *AppTestSuite) SetupTest() {
+	suite.ctrl = gomock.NewController(suite.T())
+	suite.mockInputReader = mock_input.NewMockDataReader(suite.ctrl)
+	suite.mockAnagramStore = mock_storage.NewMockStorage(suite.ctrl)
 }
 
-func (s *MockStorage) Store(_ context.Context, _, _ string) error {
-	s.StoreCallCount++
-	return nil
+func (suite *AppTestSuite) TearDownTest() {
+	suite.ctrl.Finish()
 }
 
-func (s *MockStorage) AllAnagrams(_ context.Context) <-chan storage.AnagramResult {
-	anagrams := make(chan storage.AnagramResult)
-	go func() {
-		anagrams <- storage.AnagramResult{HashKey: "test", Anagrams: []string{"test"}, Error: nil}
-		anagrams <- storage.AnagramResult{HashKey: "abc", Anagrams: []string{"abc", "acb"}, Error: nil}
-		anagrams <- storage.AnagramResult{HashKey: "bac", Anagrams: []string{"bac", "bca"}, Error: nil}
-		close(anagrams)
-	}()
-	return anagrams
-}
-
-func (s *MockStorage) Get(_ context.Context, _ string) ([]string, error) {
-	return nil, nil
-}
-
-type MockStorageWithError struct {
-	StoreCallCount int
-}
-
-func (s *MockStorageWithError) Store(_ context.Context, _, _ string) error {
-	s.StoreCallCount++
-	return assert.AnError
-}
-
-func (s *MockStorageWithError) AllAnagrams(_ context.Context) <-chan storage.AnagramResult {
-	anagrams := make(chan storage.AnagramResult)
-	go func() {
-		anagrams <- storage.AnagramResult{Error: assert.AnError}
-		close(anagrams)
-	}()
-	return anagrams
-}
-
-func (s *MockStorageWithError) Get(_ context.Context, _ string) ([]string, error) {
-	return nil, nil
-}
-
-type MockInputReader struct {
-	LinesCallCount   int
-	PrepareCallCount int
-	LinesChannel     chan string
-}
-
-func (i *MockInputReader) Lines(_ context.Context) <-chan string {
-	i.LinesCallCount++
-	return i.LinesChannel
-}
-func (i *MockInputReader) Prepare(_ context.Context) error {
-	i.PrepareCallCount++
-	return nil
-}
-
-func TestAppPrintAnagrams(t *testing.T) {
+func (suite *AppTestSuite) TestAppPrintAnagrams() {
 	rescueStdout := os.Stdout
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	mockReader := &MockInputReader{}
-	mockStorage := &MockStorage{}
+	mockInputReader := mock_input.NewMockDataReader(suite.ctrl)
+	mockAnagramStore := mock_storage.NewMockStorage(suite.ctrl)
+
 	app := app.AnagramApplication{
-		Input:          mockReader,
-		AnagramStorage: mockStorage,
+		Input:          mockInputReader,
+		AnagramStorage: mockAnagramStore,
 	}
-	go func() {
-		mockReader.LinesChannel = make(chan string)
-		mockReader.LinesChannel <- "test"
-		mockReader.LinesChannel <- "tets"
-		close(mockReader.LinesChannel)
-	}()
+
+	mockAnagramStore.EXPECT().AllAnagrams(gomock.Any()).Return(chanAnagrams(
+		storage.AnagramResult{HashKey: "abc", Anagrams: []string{"abc", "acb"}, Error: nil},
+		storage.AnagramResult{HashKey: "bac", Anagrams: []string{"bac", "bca"}, Error: nil},
+	))
+
 	err := app.PrintAnagrams(context.Background())
-	assert.NoError(t, err)
+	assert.NoError(suite.T(), err)
 
 	w.Close()
 	out, _ := io.ReadAll(r)
 	os.Stdout = rescueStdout
 
-	assert.Equal(t, "abc, acb\nbac, bca\n", string(out))
+	assert.Equal(suite.T(), "abc, acb\nbac, bca\n", string(out))
 }
 
-func TestAppPrintAnagramsError(t *testing.T) {
+func (suite *AppTestSuite) TestAppPrintAnagramsError() {
 	rescueStdout := os.Stdout
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	mockReader := &MockInputReader{}
-	mockStorage := &MockStorageWithError{}
+	mockInputReader := mock_input.NewMockDataReader(suite.ctrl)
+	mockAnagramStore := mock_storage.NewMockStorage(suite.ctrl)
+
 	app := app.AnagramApplication{
-		Input:          mockReader,
-		AnagramStorage: mockStorage,
+		Input:          mockInputReader,
+		AnagramStorage: mockAnagramStore,
 	}
-	go func() {
-		mockReader.LinesChannel = make(chan string)
-		mockReader.LinesChannel <- "test"
-		mockReader.LinesChannel <- "tets"
-		close(mockReader.LinesChannel)
-	}()
+
+	mockAnagramStore.EXPECT().AllAnagrams(gomock.Any()).Return(chanAnagrams(
+		storage.AnagramResult{Error: assert.AnError},
+	))
+
 	err := app.PrintAnagrams(context.Background())
-	assert.Error(t, err)
+	assert.Error(suite.T(), err)
 
 	w.Close()
 	out, _ := io.ReadAll(r)
 	os.Stdout = rescueStdout
 
-	assert.Equal(t, "", string(out))
+	assert.Equal(suite.T(), "", string(out))
+}
+
+func (suite *AppTestSuite) TestAppPrintAnagramsEmpty() {
+	rescueStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	mockInputReader := mock_input.NewMockDataReader(suite.ctrl)
+	mockAnagramStore := mock_storage.NewMockStorage(suite.ctrl)
+
+	app := app.AnagramApplication{
+		Input:          mockInputReader,
+		AnagramStorage: mockAnagramStore,
+	}
+
+	mockAnagramStore.EXPECT().AllAnagrams(gomock.Any()).Return(chanAnagrams())
+
+	err := app.PrintAnagrams(context.Background())
+	assert.NoError(suite.T(), err)
+
+	w.Close()
+	out, _ := io.ReadAll(r)
+	os.Stdout = rescueStdout
+
+	assert.Equal(suite.T(), "", string(out))
+}
+
+func (suite *AppTestSuite) TestAppPrintAnagramsEmptyAnagrams() {
+	rescueStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	mockInputReader := mock_input.NewMockDataReader(suite.ctrl)
+	mockAnagramStore := mock_storage.NewMockStorage(suite.ctrl)
+
+	app := app.AnagramApplication{
+		Input:          mockInputReader,
+		AnagramStorage: mockAnagramStore,
+	}
+
+	mockAnagramStore.EXPECT().AllAnagrams(gomock.Any()).Return(chanAnagrams(
+		storage.AnagramResult{HashKey: "abc", Anagrams: []string{}, Error: nil},
+		storage.AnagramResult{HashKey: "bac", Anagrams: []string{}, Error: nil},
+	))
+
+	err := app.PrintAnagrams(context.Background())
+	assert.NoError(suite.T(), err)
+
+	w.Close()
+	out, _ := io.ReadAll(r)
+	os.Stdout = rescueStdout
+
+	assert.Equal(suite.T(), "", string(out))
+}
+
+func (suite *AppTestSuite) TestAppHashAndStore() {
+	mockInputReader := mock_input.NewMockDataReader(suite.ctrl)
+	mockAnagramStore := mock_storage.NewMockStorage(suite.ctrl)
+
+	app := app.AnagramApplication{
+		Input:          mockInputReader,
+		AnagramStorage: mockAnagramStore,
+	}
+
+	mockInputReader.EXPECT().Lines(gomock.Any()).Return(chanLines("abc", "acb", "bac", "bca"))
+	for _, line := range []string{"abc", "acb", "bac", "bca"} {
+		mockAnagramStore.EXPECT().Store(gomock.Any(), gomock.Any(), line).Return(nil)
+	}
+
+	err := app.HashAndStore(context.Background())
+	assert.NoError(suite.T(), err)
+}
+
+func chanLines(lines ...string) <-chan string {
+	ch := make(chan string)
+	go func() {
+		defer close(ch)
+		for _, line := range lines {
+			ch <- line
+		}
+	}()
+	return ch
+}
+
+func chanAnagrams(anagrams ...storage.AnagramResult) <-chan storage.AnagramResult {
+	ch := make(chan storage.AnagramResult)
+	go func() {
+		defer close(ch)
+		for _, anagram := range anagrams {
+			ch <- anagram
+		}
+	}()
+	return ch
+}
+
+func TestAppTestSuite(t *testing.T) {
+	suite.Run(t, new(AppTestSuite))
 }

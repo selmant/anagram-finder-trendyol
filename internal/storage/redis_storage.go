@@ -70,3 +70,7 @@ func (s *RedisStorage) AllAnagrams(ctx context.Context) <-chan AnagramResult {
 	}()
 	return results
 }
+
+func (s *RedisStorage) Clear(ctx context.Context) error {
+	return s.redisClient.FlushDB(ctx).Err()
+}

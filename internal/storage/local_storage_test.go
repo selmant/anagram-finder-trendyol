@@ -6,80 +6,104 @@ import (
 
 	"github.com/selmant/anagram-finder-trendyol/internal/storage"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestWordIsStoredInLocalStorage(t *testing.T) {
-	ctx := context.Background()
-	assert := assert.New(t)
-
-	ls := storage.NewLocalStorage()
-	err := ls.Store(ctx, "key", "test")
-	assert.NoError(err)
-
-	words, err := ls.Get(ctx, "key")
-	assert.NoError(err)
-	assert.Equal(len(words), 1)
-	assert.Equal(words[0], "test")
+type LocalStorageTestSuite struct {
+	suite.Suite
+	ls  storage.LocalStorage
+	ctx context.Context
 }
 
-func TestMultipleWordsAreStoredInLocalStorage(t *testing.T) {
-	ctx := context.Background()
-	assert := assert.New(t)
-
-	ls := storage.NewLocalStorage()
-	err := ls.Store(ctx, "key", "test")
-	assert.NoError(err)
-	err = ls.Store(ctx, "key", "test")
-	assert.NoError(err)
-	err = ls.Store(ctx, "key", "test")
-	assert.NoError(err)
-
-	words, err := ls.Get(ctx, "key")
-	assert.NoError(err)
-	assert.Equal(len(words), 3)
-	assert.Equal(words[0], "test")
+func (suite *LocalStorageTestSuite) SetupTest() {
+	suite.ls = *storage.NewLocalStorage()
+	suite.ctx = context.Background()
 }
 
-func TestAnagramsReturnsAll(t *testing.T) {
-	ctx := context.Background()
-	assert := assert.New(t)
+func (suite *LocalStorageTestSuite) TestWordIsStoredInLocalStorage() {
+	err := suite.ls.Store(suite.ctx, "key", "test")
+	assert.NoError(suite.T(), err)
 
-	ls := storage.NewLocalStorage()
-	err := ls.Store(ctx, "key", "test")
-	assert.NoError(err)
-	err = ls.Store(ctx, "key2", "test")
-	assert.NoError(err)
-	err = ls.Store(ctx, "key3", "test")
-	assert.NoError(err)
+	words, err := suite.ls.Get(suite.ctx, "key")
+	assert.NoError(suite.T(), err)
+	assert.Len(suite.T(), words, 1)
+	assert.Equal(suite.T(), "test", words[0])
+}
 
-	all := ls.AllAnagrams(ctx)
+func (suite *LocalStorageTestSuite) TestMultipleWordsAreStoredInLocalStorage() {
+	err := suite.ls.Store(suite.ctx, "key", "test")
+	assert.NoError(suite.T(), err)
+	err = suite.ls.Store(suite.ctx, "key", "test")
+	assert.NoError(suite.T(), err)
+	err = suite.ls.Store(suite.ctx, "key", "test")
+	assert.NoError(suite.T(), err)
+
+	words, err := suite.ls.Get(suite.ctx, "key")
+	assert.NoError(suite.T(), err)
+	assert.Len(suite.T(), words, 3)
+	assert.Equal(suite.T(), "test", words[0])
+}
+
+func (suite *LocalStorageTestSuite) TestAnagramsReturnsAll() {
+	err := suite.ls.Store(suite.ctx, "key", "test")
+	assert.NoError(suite.T(), err)
+	err = suite.ls.Store(suite.ctx, "key2", "test")
+	assert.NoError(suite.T(), err)
+	err = suite.ls.Store(suite.ctx, "key3", "test")
+	assert.NoError(suite.T(), err)
+
+	all := suite.ls.AllAnagrams(suite.ctx)
 
 	count := 0
 	for r := range all {
 		count++
-		assert.NoError(r.Error)
+		assert.NoError(suite.T(), r.Error)
 	}
-	assert.Equal(3, count)
+	assert.Equal(suite.T(), 3, count)
 }
 
-func TestAnagramsReturnsAllWithMultipleKeys(t *testing.T) {
-	ctx := context.Background()
-	assert := assert.New(t)
+func (suite *LocalStorageTestSuite) TestAnagramsReturnsAllWithMultipleKeys() {
+	err := suite.ls.Store(suite.ctx, "key", "test")
+	assert.NoError(suite.T(), err)
+	err = suite.ls.Store(suite.ctx, "key", "test2")
+	assert.NoError(suite.T(), err)
+	err = suite.ls.Store(suite.ctx, "key2", "test3")
+	assert.NoError(suite.T(), err)
 
-	ls := storage.NewLocalStorage()
-	err := ls.Store(ctx, "key", "test")
-	assert.NoError(err)
-	err = ls.Store(ctx, "key", "test2")
-	assert.NoError(err)
-	err = ls.Store(ctx, "key2", "test3")
-	assert.NoError(err)
-
-	all := ls.AllAnagrams(ctx)
+	all := suite.ls.AllAnagrams(suite.ctx)
 
 	count := 0
 	for r := range all {
 		count++
-		assert.NoError(r.Error)
+		assert.NoError(suite.T(), r.Error)
 	}
-	assert.Equal(2, count)
+	assert.Equal(suite.T(), 2, count)
+}
+
+func (suite *LocalStorageTestSuite) TestClearLocalStorage() {
+	err := suite.ls.Store(suite.ctx, "key", "test")
+	assert.NoError(suite.T(), err)
+	err = suite.ls.Store(suite.ctx, "key", "test2")
+	assert.NoError(suite.T(), err)
+	err = suite.ls.Store(suite.ctx, "key2", "test3")
+	assert.NoError(suite.T(), err)
+
+	words, err := suite.ls.Get(suite.ctx, "key2")
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), "test3", words[0])
+
+	err = suite.ls.Clear(suite.ctx)
+	assert.NoError(suite.T(), err)
+
+	words, err = suite.ls.Get(suite.ctx, "key")
+	assert.NoError(suite.T(), err)
+	assert.Len(suite.T(), words, 0)
+
+	words, err = suite.ls.Get(suite.ctx, "key2")
+	assert.NoError(suite.T(), err)
+	assert.Empty(suite.T(), words)
+}
+
+func TestLocalStorageTestSuite(t *testing.T) {
+	suite.Run(t, new(LocalStorageTestSuite))
 }

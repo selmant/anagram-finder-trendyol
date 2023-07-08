@@ -10,116 +10,100 @@ import (
 	"github.com/selmant/anagram-finder-trendyol/app/config"
 	"github.com/selmant/anagram-finder-trendyol/internal/input"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
-//nolint:gochecknoinits // this is test file
-func init() {
+type FileReaderSuite struct {
+	suite.Suite
+	tempFile string
+}
+
+func (suite *FileReaderSuite) SetupSuite() {
 	config.GlobalConfig = &config.Config{
 		WordsChannelSize: 8,
 		WorkerPoolSize:   16,
 	}
 }
 
-func TestFileReaderFileNotFound(t *testing.T) {
-	ctx := context.Background()
-	assert := assert.New(t)
+func (suite *FileReaderSuite) SetupTest() {
+	f, err := os.CreateTemp("", "test")
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+	suite.tempFile = f.Name()
+}
 
+func (suite *FileReaderSuite) TearDownTest() {
+	os.Remove(suite.tempFile)
+}
+
+func (suite *FileReaderSuite) TestFileReaderFileNotFound() {
+	ctx := context.Background()
 	fr := input.NewFileReader("unexistedfile.txt")
 
 	err := fr.Prepare(ctx)
-	assert.Error(err)
+	assert.Error(suite.T(), err)
 }
 
-func TestFileReaderFileFound(t *testing.T) {
+func (suite *FileReaderSuite) TestFileReaderFileFound() {
 	ctx := context.Background()
-	assert := assert.New(t)
+	fr := input.NewFileReader(suite.tempFile)
 
-	f, err := os.CreateTemp("", "test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = os.WriteFile(f.Name(), []byte("test"), 0644)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.Remove(f.Name())
-
-	fr := input.NewFileReader(f.Name())
-
-	err = fr.Prepare(ctx)
-	assert.NoError(err)
+	err := fr.Prepare(ctx)
+	assert.NoError(suite.T(), err)
 }
 
-func TestFileReaderReadSingleLine(t *testing.T) {
+func (suite *FileReaderSuite) TestFileReaderReadSingleLine() {
 	ctx := context.Background()
-	assert := assert.New(t)
+	fr := input.NewFileReader(suite.tempFile)
 
-	f, err := os.CreateTemp("", "test")
+	err := fr.Prepare(ctx)
+	assert.NoError(suite.T(), err)
+
+	expectedWord := "test"
+	err = os.WriteFile(suite.tempFile, []byte(expectedWord), 0644)
 	if err != nil {
-		t.Fatal(err)
+		suite.T().Fatal(err)
 	}
-	err = os.WriteFile(f.Name(), []byte("test"), 0644)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.Remove(f.Name())
-
-	fr := input.NewFileReader(f.Name())
-
-	err = fr.Prepare(ctx)
-	assert.NoError(err)
 
 	data := <-fr.Lines(ctx)
-	assert.NoError(err)
-	assert.Equal("test", data)
+	assert.Equal(suite.T(), expectedWord, data)
 }
 
-func TestFileReaderReadMultipleLines(t *testing.T) {
+func (suite *FileReaderSuite) TestFileReaderReadMultipleLines() {
 	ctx := context.Background()
-	assert := assert.New(t)
+	fr := input.NewFileReader(suite.tempFile)
 
-	f, err := os.CreateTemp("", "test")
+	err := fr.Prepare(ctx)
+	assert.NoError(suite.T(), err)
+
+	expectedWords := []string{"test1", "test2", "test3"}
+	err = os.WriteFile(suite.tempFile, []byte("test1\ntest2\ntest3\n"), 0644)
 	if err != nil {
-		t.Fatal(err)
+		suite.T().Fatal(err)
 	}
-	err = os.WriteFile(f.Name(), []byte("test\ntest\ntest\n"), 0644)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.Remove(f.Name())
-
-	fr := input.NewFileReader(f.Name())
-
-	err = fr.Prepare(ctx)
-	assert.NoError(err)
 
 	count := 0
 	for word := range fr.Lines(ctx) {
+		assert.Equal(suite.T(), expectedWords[count], word)
 		count++
-		assert.Equal("test", word)
 	}
 
-	assert.Equal(3, count)
+	assert.Equal(suite.T(), len(expectedWords), count)
 }
 
-func TestFileReaderConcurrentRead(t *testing.T) {
+func (suite *FileReaderSuite) TestFileReaderConcurrentRead() {
 	ctx := context.Background()
-	assert := assert.New(t)
+	fr := input.NewFileReader(suite.tempFile)
 
-	f, err := os.CreateTemp("", "test")
+	err := fr.Prepare(ctx)
+	assert.NoError(suite.T(), err)
+
+	expectedWord := "test"
+	err = os.WriteFile(suite.tempFile, []byte("test\ntest\ntest\ntest\ntest\ntest\ntest\ntest\ntest\ntest\n"), 0644)
 	if err != nil {
-		t.Fatal(err)
+		suite.T().Fatal(err)
 	}
-	err = os.WriteFile(f.Name(), []byte("test\ntest\ntest\ntest\ntest\ntest\ntest\ntest\ntest\ntest\n"), 0644)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.Remove(f.Name())
-
-	fr := input.NewFileReader(f.Name())
-
-	err = fr.Prepare(ctx)
-	assert.NoError(err)
 
 	wg := sync.WaitGroup{}
 	wg.Add(2)
@@ -129,9 +113,9 @@ func TestFileReaderConcurrentRead(t *testing.T) {
 		for word := range fr.Lines(ctx) {
 			time.Sleep(1 * time.Millisecond)
 			count1++
-			assert.Equal("test", word)
+			assert.Equal(suite.T(), expectedWord, word)
 		}
-		assert.Greater(count1, 0)
+		assert.Greater(suite.T(), count1, 0)
 		wg.Done()
 	}()
 
@@ -139,12 +123,16 @@ func TestFileReaderConcurrentRead(t *testing.T) {
 		for word := range fr.Lines(ctx) {
 			time.Sleep(1 * time.Millisecond)
 			count2++
-			assert.Equal("test", word)
+			assert.Equal(suite.T(), expectedWord, word)
 		}
-		assert.Greater(count2, 0)
+		assert.Greater(suite.T(), count2, 0)
 		wg.Done()
 	}()
 
 	wg.Wait()
-	assert.Equal(10, count1+count2)
+	assert.Equal(suite.T(), 10, count1+count2)
+}
+
+func TestFileReaderSuite(t *testing.T) {
+	suite.Run(t, new(FileReaderSuite))
 }

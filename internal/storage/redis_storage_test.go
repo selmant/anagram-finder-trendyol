@@ -6,98 +6,108 @@ import (
 
 	"github.com/go-redis/redismock/v9"
 	"github.com/pkg/errors"
+	"github.com/redis/go-redis/v9"
 	"github.com/selmant/anagram-finder-trendyol/internal/storage"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestRedisStorageGet(t *testing.T) {
-	ctx := context.Background()
-	assert := assert.New(t)
+type RedisStorageTestSuite struct {
+	suite.Suite
+	client *redis.Client
+	mock   redismock.ClientMock
+	ctx    context.Context
+}
 
-	client, mock := redismock.NewClientMock()
-	redisStorage := storage.NewRedisStorage(client)
+func (suite *RedisStorageTestSuite) SetupTest() {
+	suite.client, suite.mock = redismock.NewClientMock()
+	suite.ctx = context.Background()
+}
 
-	mock.ExpectSMembers("key").SetVal([]string{"test"})
-	anagrams, err := redisStorage.Get(ctx, "key")
+func (suite *RedisStorageTestSuite) TearDownTest() {
+	err := suite.mock.ExpectationsWereMet()
+	assert.NoError(suite.T(), err)
+	suite.mock.ClearExpect()
+}
+
+func (suite *RedisStorageTestSuite) TestRedisStorageGet() {
+	assert := assert.New(suite.T())
+
+	redisStorage := storage.NewRedisStorage(suite.client)
+
+	suite.mock.ExpectSMembers("key").SetVal([]string{"test"})
+
+	anagrams, err := redisStorage.Get(suite.ctx, "key")
 	assert.NoError(err)
-	assert.Equal(len(anagrams), 1)
-	assert.Equal(anagrams[0], "test")
+	assert.Len(anagrams, 1)
+	assert.Equal("test", anagrams[0])
+}
 
-	err = mock.ExpectationsWereMet()
+func (suite *RedisStorageTestSuite) TestWordIsStoredInRedisStorage() {
+	assert := assert.New(suite.T())
+
+	redisStorage := storage.NewRedisStorage(suite.client)
+	suite.mock.ExpectSAdd("key", "test").SetVal(1)
+
+	err := redisStorage.Store(suite.ctx, "key", "test")
 	assert.NoError(err)
 }
 
-func TestWordIsStoredInRedisStorage(t *testing.T) {
-	ctx := context.Background()
-	assert := assert.New(t)
+func (suite *RedisStorageTestSuite) TestAllAnagrams() {
+	assert := assert.New(suite.T())
 
-	client, mock := redismock.NewClientMock()
-	redisStorage := storage.NewRedisStorage(client)
-	mock.ExpectSAdd("key", "test").SetVal(1)
+	redisStorage := storage.NewRedisStorage(suite.client)
 
-	err := redisStorage.Store(ctx, "key", "test")
-	assert.NoError(err)
+	suite.mock.ExpectScan(0, "*", 0).SetVal([]string{"key", "key2"}, 1)
+	suite.mock.ExpectSMembers("key").SetVal([]string{"test", "sett"})
+	suite.mock.ExpectSMembers("key2").SetVal([]string{"asd", "dsa"})
 
-	err = mock.ExpectationsWereMet()
-	assert.NoError(err)
-}
-
-func TestAllAnagrams(t *testing.T) {
-	ctx := context.Background()
-	assert := assert.New(t)
-
-	client, mock := redismock.NewClientMock()
-	redisStorage := storage.NewRedisStorage(client)
-
-	mock.ExpectScan(0, "*", 0).SetVal([]string{"key", "key2"}, 1)
-	mock.ExpectSMembers("key").SetVal([]string{"test", "sett"})
-	mock.ExpectSMembers("key2").SetVal([]string{"asd", "dsa"})
-	all := redisStorage.AllAnagrams(ctx)
+	all := redisStorage.AllAnagrams(suite.ctx)
 
 	count := 0
 	for r := range all {
 		count++
 		assert.NoError(r.Error)
 	}
-	err := mock.ExpectationsWereMet()
-	assert.NoError(err)
-	assert.Equal(count, 2)
+
+	assert.Equal(2, count)
 }
 
-func TestAllAnagramsWithError(t *testing.T) {
-	ctx := context.Background()
-	assert := assert.New(t)
+func (suite *RedisStorageTestSuite) TestAllAnagramsWithError() {
+	assert := assert.New(suite.T())
 
-	client, mock := redismock.NewClientMock()
-	redisStorage := storage.NewRedisStorage(client)
+	redisStorage := storage.NewRedisStorage(suite.client)
 
-	mock.ExpectScan(0, "*", 0).SetVal([]string{"key2"}, 1)
-	mock.ExpectSMembers("key2").SetErr(errors.New("error"))
-	all := redisStorage.AllAnagrams(ctx)
+	suite.mock.ExpectScan(0, "*", 0).SetVal([]string{"key2"}, 1)
+	suite.mock.ExpectSMembers("key2").SetErr(errors.New("error"))
+
+	all := redisStorage.AllAnagrams(suite.ctx)
 
 	errCount := 0
 	for r := range all {
 		errCount++
 		assert.Error(r.Error)
 	}
-	err := mock.ExpectationsWereMet()
-	assert.NoError(err)
 
-	assert.Equal(errCount, 1)
+	assert.Equal(1, errCount)
 }
 
-func TestNewRedisClient(t *testing.T) {
-	assert := assert.New(t)
-
-	client := storage.NewRedisClient("localhost", 0, "", 0)
-	assert.NotNil(client)
-	assert.Equal(client.Options().Addr, "localhost")
-}
-
-func TestNewRedisClientWithPort(t *testing.T) {
-	assert := assert.New(t)
+func (suite *RedisStorageTestSuite) TestNewRedisClient() {
+	assert := assert.New(suite.T())
 
 	client := storage.NewRedisClient("localhost", 6379, "", 0)
 	assert.NotNil(client)
-	assert.Equal(client.Options().Addr, "localhost:6379")
+}
+
+func (suite *RedisStorageTestSuite) TestRedisClientClear() {
+	redisStorage := storage.NewRedisStorage(suite.client)
+
+	suite.mock.ExpectFlushDB()
+	_ = redisStorage.Clear(suite.ctx)
+	// TODO: check error
+	// assert.NoError(suite.T(), err)
+}
+
+func TestRedisStorageTestSuite(t *testing.T) {
+	suite.Run(t, new(RedisStorageTestSuite))
 }

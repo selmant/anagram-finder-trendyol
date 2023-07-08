@@ -4,170 +4,145 @@ import (
 	"context"
 	"testing"
 
+	"github.com/golang/mock/gomock"
+	mock_internal "github.com/selmant/anagram-finder-trendyol/.mock/mock_internal"
+	mock_input "github.com/selmant/anagram-finder-trendyol/.mock/mock_internal/input"
+	mock_storage "github.com/selmant/anagram-finder-trendyol/.mock/mock_internal/storage"
 	"github.com/selmant/anagram-finder-trendyol/internal"
-	"github.com/selmant/anagram-finder-trendyol/internal/storage"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
-type MockJob struct {
-	ProcessCallCount int
+type WorkerPoolTestSuite struct {
+	suite.Suite
+	ctrl            *gomock.Controller
+	mockJob         *mock_internal.MockJob
+	mockStorage     *mock_storage.MockStorage
+	mockInputReader *mock_input.MockDataReader
 }
 
-func (j *MockJob) Process(_ context.Context) error {
-	j.ProcessCallCount++
-	return nil
+func (suite *WorkerPoolTestSuite) SetupTest() {
+	suite.ctrl = gomock.NewController(suite.T())
+	suite.mockJob = mock_internal.NewMockJob(suite.ctrl)
+	suite.mockStorage = mock_storage.NewMockStorage(suite.ctrl)
+	suite.mockInputReader = mock_input.NewMockDataReader(suite.ctrl)
 }
 
-type MockJobWithError struct {
-	ProcessCallCount int
+func (suite *WorkerPoolTestSuite) BeforeTest(_, _ string) {
+	suite.ctrl.Finish()
+	suite.ctrl = gomock.NewController(suite.T())
+	suite.mockJob = mock_internal.NewMockJob(suite.ctrl)
+	suite.mockStorage = mock_storage.NewMockStorage(suite.ctrl)
+	suite.mockInputReader = mock_input.NewMockDataReader(suite.ctrl)
 }
 
-func (j *MockJobWithError) Process(_ context.Context) error {
-	j.ProcessCallCount++
-	return assert.AnError
-}
-
-type MockStorage struct {
-	StoreCallCount int
-}
-
-func (s *MockStorage) Store(_ context.Context, _, _ string) error {
-	s.StoreCallCount++
-	return nil
-}
-
-func (s *MockStorage) AllAnagrams(_ context.Context) <-chan storage.AnagramResult {
-	return nil
-}
-
-func (s *MockStorage) Get(_ context.Context, _ string) ([]string, error) {
-	return nil, nil
-}
-
-type MockStorageWithError struct {
-	StoreCallCount int
-}
-
-func (s *MockStorageWithError) Store(_ context.Context, _, _ string) error {
-	s.StoreCallCount++
-	return assert.AnError
-}
-
-func (s *MockStorageWithError) AllAnagrams(_ context.Context) <-chan storage.AnagramResult {
-	return nil
-}
-
-func (s *MockStorageWithError) Get(_ context.Context, _ string) ([]string, error) {
-	return nil, nil
-}
-
-type MockInputReader struct {
-	LinesCallCount   int
-	PrepareCallCount int
-	LinesChannel     chan string
-}
-
-func (i *MockInputReader) Lines(_ context.Context) <-chan string {
-	i.LinesCallCount++
-	return i.LinesChannel
-}
-func (i *MockInputReader) Prepare(_ context.Context) error {
-	i.PrepareCallCount++
-	return nil
-}
-
-func TestWorkePoolStart(t *testing.T) {
+func (suite *WorkerPoolTestSuite) TestWorkerPoolStart() {
 	ctx := context.Background()
-	assert := assert.New(t)
 
 	workerCount := 2
-	job := &MockJob{}
-	wp := internal.NewWorkerPool(workerCount, job)
+	suite.mockJob.EXPECT().Process(gomock.Any()).Return(nil).Times(workerCount)
+
+	wp := internal.NewWorkerPool(workerCount, suite.mockJob)
 	err := wp.Start(ctx)
-	assert.NoError(err)
-	assert.Equal(workerCount, job.ProcessCallCount)
+	assert.NoError(suite.T(), err)
 }
 
-func TestWorkePoolStartWithError(t *testing.T) {
+func (suite *WorkerPoolTestSuite) TestWorkePoolStartWithError() {
 	ctx := context.Background()
-	assert := assert.New(t)
 
 	workerCount := 2
-	job := &MockJobWithError{}
-	wp := internal.NewWorkerPool(workerCount, job)
+	suite.mockJob.EXPECT().Process(gomock.Any()).Return(assert.AnError).Times(workerCount)
+
+	wp := internal.NewWorkerPool(workerCount, suite.mockJob)
 	err := wp.Start(ctx)
-	assert.Error(err)
-	assert.Equal(workerCount, job.ProcessCallCount)
+	assert.Error(suite.T(), err)
+	asd := assert.AnError.Error()
+	assert.Equal(suite.T(), asd+"\n"+asd, err.Error())
 }
 
-func TestReadAndMatchAnagram(t *testing.T) {
+func (suite *WorkerPoolTestSuite) TestReadAndMatchAnagram() {
 	ctx := context.Background()
-	assert := assert.New(t)
 
-	mockStorage := &MockStorage{}
-	mockRedaer := &MockInputReader{}
-	mockRedaer.LinesChannel = make(chan string)
+	workerCount := 2
+	linesChannel := make(chan string)
+	suite.mockInputReader.EXPECT().Lines(gomock.Any()).Return(linesChannel).Times(workerCount)
+
+	lines := []string{"abc", "def", "bac", "fed"}
 	go func() {
-		mockRedaer.LinesChannel <- "abc"
-		mockRedaer.LinesChannel <- "def"
-		mockRedaer.LinesChannel <- "bac"
-		mockRedaer.LinesChannel <- "fed"
-		close(mockRedaer.LinesChannel)
+		for _, line := range lines {
+			linesChannel <- line
+		}
+		close(linesChannel)
 	}()
-	workerCount := 3
 
-	job := internal.NewReadAndMatchAnagramJob(mockStorage, mockRedaer)
+	for _, line := range lines {
+		suite.mockStorage.EXPECT().Store(gomock.Any(), gomock.Any(), line).Return(nil)
+	}
+
+	job := internal.NewReadAndMatchAnagramJob(suite.mockStorage, suite.mockInputReader)
 	wp := internal.NewWorkerPool(workerCount, job)
 	err := wp.Start(ctx)
-	assert.NoError(err)
-	assert.Equal(4, mockStorage.StoreCallCount)
-	assert.Equal(workerCount, mockRedaer.LinesCallCount)
+	assert.NoError(suite.T(), err)
 }
 
-func TestReadAndMatchAnagramWithError(t *testing.T) {
+func (suite *WorkerPoolTestSuite) TestReadAndMatchAnagramWithStorageError() {
 	ctx := context.Background()
-	assert := assert.New(t)
 
-	mockStorage := &MockStorage{}
-	mockRedaer := &MockInputReader{}
-	mockRedaer.LinesChannel = make(chan string)
-	go func() {
-		mockRedaer.LinesChannel <- "abc"
-		mockRedaer.LinesChannel <- "def"
-		mockRedaer.LinesChannel <- "bac"
-		mockRedaer.LinesChannel <- "...123sdas"
-		close(mockRedaer.LinesChannel)
-	}()
 	workerCount := 3
+	linesChannel := make(chan string)
 
-	job := internal.NewReadAndMatchAnagramJob(mockStorage, mockRedaer)
+	lines := []string{"abc", "def", "bac", "def"}
+	suite.mockInputReader.EXPECT().Lines(gomock.Any()).Return(linesChannel).Times(workerCount)
+	go func() {
+		for _, line := range lines {
+			linesChannel <- line
+		}
+		close(linesChannel)
+	}()
+
+	for _, line := range lines {
+		if line == "def" {
+			suite.mockStorage.EXPECT().Store(gomock.Any(), gomock.Any(), "def").Return(assert.AnError)
+			continue
+		}
+		suite.mockStorage.EXPECT().Store(gomock.Any(), gomock.Any(), line).Return(nil)
+	}
+
+	job := internal.NewReadAndMatchAnagramJob(suite.mockStorage, suite.mockInputReader)
 	wp := internal.NewWorkerPool(workerCount, job)
 	err := wp.Start(ctx)
-	assert.Error(err)
-	assert.Equal(3, mockStorage.StoreCallCount)
-	assert.Equal(workerCount, mockRedaer.LinesCallCount)
+	assert.Error(suite.T(), err)
+	assert.Equal(suite.T(), assert.AnError.Error()+"\n"+assert.AnError.Error(), err.Error())
 }
 
-func TestReadAndMatchAnagramWithStorageError(t *testing.T) {
+func (suite *WorkerPoolTestSuite) TestReadAndMatchAnagramWithWrongInput() {
 	ctx := context.Background()
-	assert := assert.New(t)
 
-	mockStorage := &MockStorageWithError{}
-	mockRedaer := &MockInputReader{}
-	mockRedaer.LinesChannel = make(chan string)
+	workerCount := 2
+	linesChannel := make(chan string)
+	suite.mockInputReader.EXPECT().Lines(gomock.Any()).Return(linesChannel).Times(workerCount)
+
+	lines := []string{"abc", "def", "bac", "...123sdas"}
 	go func() {
-		mockRedaer.LinesChannel <- "abc"
-		mockRedaer.LinesChannel <- "def"
-		mockRedaer.LinesChannel <- "bac"
-		mockRedaer.LinesChannel <- "fed"
-		close(mockRedaer.LinesChannel)
+		for _, line := range lines {
+			linesChannel <- line
+		}
+		close(linesChannel)
 	}()
-	workerCount := 3
 
-	job := internal.NewReadAndMatchAnagramJob(mockStorage, mockRedaer)
+	for _, line := range lines {
+		if line == "...123sdas" {
+			continue
+		}
+		suite.mockStorage.EXPECT().Store(gomock.Any(), gomock.Any(), line).Return(nil)
+	}
+
+	job := internal.NewReadAndMatchAnagramJob(suite.mockStorage, suite.mockInputReader)
 	wp := internal.NewWorkerPool(workerCount, job)
 	err := wp.Start(ctx)
-	assert.Error(err)
-	assert.Equal(4, mockStorage.StoreCallCount)
-	assert.Equal(workerCount, mockRedaer.LinesCallCount)
+	assert.Error(suite.T(), err)
+}
+
+func TestWorkerPoolTestSuite(t *testing.T) {
+	suite.Run(t, new(WorkerPoolTestSuite))
 }

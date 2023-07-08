@@ -9,24 +9,26 @@ import (
 const EnglishLetterCount = 26
 
 const (
-	onlyLowerCaseLettersError   = "word must contain only lowercase letters"
-	hashMustBe26CharactersError = "hash must be 26 characters long"
-	wordMustNotBeEmptyError     = "word must not be empty"
+	ErrLowerCaseLetters       = "word must contain only lowercase letters"
+	ErrHashMustBe26Characters = "hash must be 26 characters long"
+	ErrWordMustNotBeEmpty     = "word must not be empty"
 )
+
+var ErrorWordMustNotBeEmpty = errors.New(ErrWordMustNotBeEmpty)
 
 type AnagramLetterMap [EnglishLetterCount]uint8
 
 func NewAnagramLetterMap(word string) (AnagramLetterMap, error) {
 	var w AnagramLetterMap
 	if len(word) == 0 {
-		return w, errors.New(wordMustNotBeEmptyError)
+		return w, errors.New(ErrWordMustNotBeEmpty)
 	}
 	for _, c := range word {
 		if unicode.IsSpace(c) {
 			continue
 		}
 		if c < 'a' || c > 'z' {
-			return AnagramLetterMap{}, errors.New(onlyLowerCaseLettersError)
+			return AnagramLetterMap{}, ErrorWordMustNotBeEmpty
 		}
 		w[c-'a']++
 	}
@@ -35,7 +37,7 @@ func NewAnagramLetterMap(word string) (AnagramLetterMap, error) {
 
 func NewAnagramLetterMapFromHash(hash string) (AnagramLetterMap, error) {
 	if len(hash) != EnglishLetterCount {
-		return AnagramLetterMap{}, errors.New(hashMustBe26CharactersError)
+		return AnagramLetterMap{}, errors.New(ErrHashMustBe26Characters)
 	}
 	var w AnagramLetterMap
 	for i, c := range hash {

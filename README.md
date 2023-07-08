@@ -5,6 +5,12 @@
 - all words are in english
 - there cannot be more than 255 identical characters in a word. (uint8 limit)
 
+# Setup
+```
+go install github.com/golang/mock/mockgen@v1.6.0
+curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.53.3
+```
+
 # How to run
 After building the project, you can run the binary with the following command
 ```
@@ -41,6 +47,11 @@ docker build -t anagram-trendyol .
 docker run anagram-trendyol --url https://raw.githubusercontent.com/Trendyol/assignments/main/anagrams.txt --storage-type redis --redis-host 172.17.0.2 --redis-port 6379 --log-level 4
 ```
 
+# How to run tests
+```
+./scripts/setup_mocks.sh
+go test ./... -cover
+```
 # Benchmark
 ```
 With Redis (200.000 words) 

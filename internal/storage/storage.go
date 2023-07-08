@@ -16,6 +16,7 @@ type AnagramResult struct {
 const (
 	ErrRedisClientPingFailed = "redis client ping failed"
 	ErrInvalidStorageType    = "invalid storage type"
+	ErrInvalidConfig         = "invalid config"
 )
 
 type Storage interface {
@@ -26,6 +27,8 @@ type Storage interface {
 	// It returns the channel of anagrams with coma seperated for all words in the storage. The channel will be
 	// closed either when all the anagrams have been read or when an error occurs, signalled through the error channel.
 	AllAnagrams(ctx context.Context) <-chan AnagramResult
+	// It clears the storage.
+	Clear(ctx context.Context) error
 }
 
 type Factory interface {
@@ -36,6 +39,9 @@ type Factory interface {
 type UnifiedStorageFactory struct{}
 
 func (f *UnifiedStorageFactory) CreateStorage(cfg *config.Config) (Storage, error) {
+	if cfg == nil {
+		return nil, errors.New(ErrInvalidConfig)
+	}
 	switch cfg.StorageType {
 	case config.StorageTypeLocal:
 		return NewLocalStorage(), nil
