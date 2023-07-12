@@ -1,3 +1,36 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  labels:
+    app: redis
+spec:
+  ports:
+    - port: 6379
+      targetPort: 6379
+  selector:
+    app: redis
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:6.2.5-alpine
+          ports:
+            - containerPort: 6379
+---
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -7,7 +40,8 @@ spec:
     spec:
       containers:
         - name: anagram-finder-container
-          image: your-docker-image:tag
+          image: anagram-trendyol:latest
+          imagePullPolicy: Never
           command: ["/app/anagram-finder-trendyol"]
           args:
             - "/app/anagram-finder-trendyol"
